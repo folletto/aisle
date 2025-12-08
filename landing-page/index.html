@@ -64,7 +64,7 @@
 
         .search-box .material-symbols-outlined {
             position: absolute;
-            left: 1rem;
+            left: 0;
             top: 50%;
             transform: translateY(-50%);
             color: rgba(0, 59, 77, 0.4);
@@ -74,7 +74,7 @@
 
         .search-box input {
             width: 100%;
-            padding: 0.875rem 1rem 0.875rem 3rem;
+            padding: 0.875rem 1rem 0.875rem 1.75rem;
             font-size: 1rem;
             border: none;
             border-bottom: 2px solid rgba(124, 173, 195, 1.0);
@@ -254,7 +254,7 @@
         </div>
 
         <footer>
-            <p>Built with Claude Code | <a href="https://github.com" target="_blank" rel="noopener noreferrer">View on GitHub</a></p>
+            <p>Built with Claude Code | <a href="https://github.com/folletto/aisle" target="_blank" rel="noopener noreferrer">View on GitHub</a></p>
         </footer>
     </div>
 
@@ -292,7 +292,7 @@
             noResults.style.display = 'none';
 
             grid.innerHTML = apps.map(app => `
-                <a href="${app.url}" class="app-card" target="_blank" rel="noopener noreferrer">
+                <a href="${app.url}" class="app-card">
                     <h3>${app.name}</h3>
                     <p>${app.description}</p>
                     <div class="app-tags">

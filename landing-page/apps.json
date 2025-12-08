@@ -1,11 +1,18 @@
 {
   "apps": [
     {
+      "name": "Date Picker Calendar",
+      "description": "Pick dates on a calendar and share them easily",
+      "url": "https://aisle-cal-pick-to-share.netlify.app",
+      "folder": "cal-pick-to-share",
+      "tags": ["calendar"]
+    },
+    {
       "name": "Hello World",
       "description": "A simple example mini-app to demonstrate the structure",
-      "url": "https://placeholder.netlify.app",
+      "url": "https://example.org",
       "folder": "hello-world",
-      "tags": ["example", "demo"]
+      "tags": ["example"]
     }
   ]
 }
