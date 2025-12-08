@@ -37,6 +37,7 @@
 
         header {
             margin-bottom: 3rem;
+            text-align: center;
         }
 
         h1 {
@@ -75,7 +76,8 @@
             width: 100%;
             padding: 0.875rem 1rem 0.875rem 3rem;
             font-size: 1rem;
-            border: 2px solid rgba(124, 173, 195, 1.0);
+            border: none;
+            border-bottom: 2px solid rgba(124, 173, 195, 1.0);
             background: rgba(255, 255, 255, 1.0);
             color: rgba(0, 59, 77, 1.0);
             outline: none;
@@ -83,11 +85,11 @@
         }
 
         .search-box input:focus {
-            border-color: rgba(19, 123, 168, 1.0);
+            border-bottom-color: rgba(19, 123, 168, 1.0);
         }
 
         .search-box input:focus ~ .material-symbols-outlined {
-            color: rgba(19, 123, 168, 1.0);
+            color: rgba(0, 59, 77, 1.0);
         }
 
         .search-box input::placeholder {
@@ -127,11 +129,9 @@
         .app-count {
             text-align: center;
             margin-bottom: 2rem;
-            font-size: 0.9rem;
-            color: rgba(0, 59, 77, 0.6);
-            text-transform: capitalize;
-            letter-spacing: 0.02em;
-            font-weight: 500;
+            font-size: 0.8rem;
+            color: rgba(124, 173, 195, 1.0);
+            font-weight: 400;
         }
 
         .apps-grid {
@@ -197,22 +197,18 @@
 
         footer {
             text-align: center;
-            color: rgba(0, 59, 77, 0.6);
+            color: rgba(124, 173, 195, 1.0);
             margin-top: 4rem;
-            padding-top: 2rem;
-            border-top: 1px solid rgba(124, 173, 195, 0.3);
-            font-size: 0.9rem;
+            font-size: 0.8rem;
         }
 
         footer a {
-            color: rgba(19, 123, 168, 1.0);
+            color: rgba(124, 173, 195, 1.0);
             text-decoration: none;
-            border-bottom: 1px solid rgba(19, 123, 168, 0.3);
-            transition: border-color 0.2s ease;
         }
 
         footer a:hover {
-            border-bottom-color: rgba(19, 123, 168, 1.0);
+            text-decoration: underline;
         }
 
         @media (max-width: 768px) {
