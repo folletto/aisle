@@ -1,6 +1,8 @@
-# Mini-Apps Collection
+# Aisle
 
-A monorepo for independent web-based mini-apps. Each app is self-contained and deploys to its own Netlify container.
+A monorepo for LLM-made ("vibe coded") personal mini web apps.  
+→ [Open apps](https://the-aisle.netlify.app/)
+
 
 ## 🎯 Overview
 
