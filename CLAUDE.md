@@ -55,10 +55,8 @@ Copy this template for each new app's `netlify.toml`:
 [build]
   publish = "."
   command = "echo 'Static site - no build needed'"
-
-[build.ignore]
   # Only rebuild if this app's directory changed
-  command = "git diff --quiet HEAD^ HEAD ."
+  ignore = "git diff --quiet HEAD^ HEAD ."
 
 [[headers]]
   for = "/*"
