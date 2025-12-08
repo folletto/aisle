@@ -1,0 +1,193 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="A simple hello world mini-app demonstrating the structure">
+    <title>Hello World</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 2rem;
+        }
+
+        .container {
+            background: white;
+            border-radius: 20px;
+            padding: 3rem;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            text-align: center;
+            max-width: 600px;
+            width: 100%;
+        }
+
+        h1 {
+            font-size: 3rem;
+            color: #667eea;
+            margin-bottom: 1rem;
+            animation: fadeInUp 0.6s ease;
+        }
+
+        .emoji {
+            font-size: 5rem;
+            margin-bottom: 1rem;
+            animation: wave 2s ease infinite;
+            display: inline-block;
+        }
+
+        p {
+            color: #666;
+            font-size: 1.2rem;
+            line-height: 1.8;
+            margin-bottom: 2rem;
+        }
+
+        .info-box {
+            background: #f8f9fa;
+            border-left: 4px solid #667eea;
+            padding: 1rem;
+            margin: 2rem 0;
+            text-align: left;
+            border-radius: 4px;
+        }
+
+        .info-box h3 {
+            color: #667eea;
+            margin-bottom: 0.5rem;
+            font-size: 1rem;
+        }
+
+        .info-box p {
+            color: #666;
+            font-size: 0.95rem;
+            margin: 0;
+        }
+
+        .button {
+            display: inline-block;
+            padding: 1rem 2rem;
+            background: #667eea;
+            color: white;
+            text-decoration: none;
+            border-radius: 50px;
+            font-weight: 600;
+            transition: all 0.3s ease;
+            margin-top: 1rem;
+        }
+
+        .button:hover {
+            background: #764ba2;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+        }
+
+        footer {
+            margin-top: 2rem;
+            padding-top: 1rem;
+            border-top: 1px solid #eee;
+            text-align: center;
+            color: #999;
+            font-size: 0.9rem;
+        }
+
+        footer a {
+            color: #667eea;
+            text-decoration: none;
+        }
+
+        footer a:hover {
+            text-decoration: underline;
+        }
+
+        @keyframes wave {
+            0%, 100% {
+                transform: rotate(0deg);
+            }
+            25% {
+                transform: rotate(20deg);
+            }
+            75% {
+                transform: rotate(-20deg);
+            }
+        }
+
+        @keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        @media (max-width: 768px) {
+            .container {
+                padding: 2rem;
+            }
+
+            h1 {
+                font-size: 2rem;
+            }
+
+            .emoji {
+                font-size: 3rem;
+            }
+
+            p {
+                font-size: 1rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="emoji">👋</div>
+        <h1>Hello World!</h1>
+        <p>Welcome to the Mini-Apps collection. This is an example app demonstrating the monorepo structure.</p>
+
+        <div class="info-box">
+            <h3>📦 About This App</h3>
+            <p>This is a self-contained mini-app that lives in its own directory and deploys to its own Netlify container. Each app in this collection is independent and can be created using Claude Code.</p>
+        </div>
+
+        <div class="info-box">
+            <h3>🚀 How It Works</h3>
+            <p>Each mini-app has its own <code>index.html</code> and <code>netlify.toml</code> file. When you push changes to GitHub, only the modified apps are rebuilt and redeployed automatically.</p>
+        </div>
+
+        <a href="/" class="button">View All Apps</a>
+
+        <footer>
+            <a href="/">← Back to all apps</a>
+        </footer>
+    </div>
+
+    <script>
+        // Add some interactivity
+        const emoji = document.querySelector('.emoji');
+
+        emoji.addEventListener('click', () => {
+            const emojis = ['👋', '👍', '🎉', '🚀', '💡', '⭐', '🎯', '✨'];
+            const randomEmoji = emojis[Math.floor(Math.random() * emojis.length)];
+            emoji.textContent = randomEmoji;
+        });
+
+        // Log a welcome message
+        console.log('%cWelcome to Mini-Apps! 🎉', 'font-size: 20px; color: #667eea; font-weight: bold;');
+        console.log('This app is part of a monorepo structure for independent mini-apps.');
+    </script>
+</body>
+</html>

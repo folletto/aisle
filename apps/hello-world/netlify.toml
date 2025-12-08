@@ -1,0 +1,14 @@
+[build]
+  publish = "."
+  command = "echo 'Static site - no build needed'"
+
+[build.ignore]
+  # Only rebuild if this app's directory changed
+  command = "git diff --quiet HEAD^ HEAD ."
+
+[[headers]]
+  for = "/*"
+  [headers.values]
+    X-Frame-Options = "SAMEORIGIN"
+    X-Content-Type-Options = "nosniff"
+    Referrer-Policy = "strict-origin-when-cross-origin"
