@@ -1,0 +1,327 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="A collection of independent web-based mini-apps">
+    <title>Mini-Apps Collection</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 2rem;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        header {
+            text-align: center;
+            color: white;
+            margin-bottom: 3rem;
+        }
+
+        h1 {
+            font-size: 3rem;
+            margin-bottom: 0.5rem;
+            font-weight: 700;
+        }
+
+        .subtitle {
+            font-size: 1.2rem;
+            opacity: 0.9;
+        }
+
+        .search-box {
+            max-width: 500px;
+            margin: 2rem auto;
+            position: relative;
+        }
+
+        .search-box input {
+            width: 100%;
+            padding: 1rem 1.5rem;
+            font-size: 1rem;
+            border: none;
+            border-radius: 50px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            outline: none;
+        }
+
+        .search-box input:focus {
+            box-shadow: 0 6px 12px rgba(0, 0, 0, 0.15);
+        }
+
+        .filter-tags {
+            display: flex;
+            gap: 0.5rem;
+            justify-content: center;
+            flex-wrap: wrap;
+            margin-bottom: 2rem;
+        }
+
+        .tag-filter {
+            padding: 0.5rem 1rem;
+            background: rgba(255, 255, 255, 0.2);
+            color: white;
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            border-radius: 20px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-size: 0.9rem;
+        }
+
+        .tag-filter:hover {
+            background: rgba(255, 255, 255, 0.3);
+        }
+
+        .tag-filter.active {
+            background: white;
+            color: #667eea;
+            border-color: white;
+        }
+
+        .apps-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+            gap: 1.5rem;
+            margin-bottom: 2rem;
+        }
+
+        .app-card {
+            background: white;
+            border-radius: 12px;
+            padding: 1.5rem;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            transition: all 0.3s ease;
+            text-decoration: none;
+            color: inherit;
+            display: block;
+        }
+
+        .app-card:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 8px 16px rgba(0, 0, 0, 0.2);
+        }
+
+        .app-card h3 {
+            color: #667eea;
+            margin-bottom: 0.5rem;
+            font-size: 1.3rem;
+        }
+
+        .app-card p {
+            color: #666;
+            line-height: 1.6;
+            margin-bottom: 1rem;
+        }
+
+        .app-tags {
+            display: flex;
+            gap: 0.5rem;
+            flex-wrap: wrap;
+        }
+
+        .app-tag {
+            padding: 0.25rem 0.75rem;
+            background: #f0f0f0;
+            color: #666;
+            border-radius: 12px;
+            font-size: 0.8rem;
+        }
+
+        .no-results {
+            text-align: center;
+            color: white;
+            font-size: 1.2rem;
+            padding: 3rem;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 12px;
+        }
+
+        footer {
+            text-align: center;
+            color: white;
+            margin-top: 3rem;
+            padding-top: 2rem;
+            border-top: 1px solid rgba(255, 255, 255, 0.2);
+            opacity: 0.8;
+        }
+
+        footer a {
+            color: white;
+            text-decoration: underline;
+        }
+
+        .app-count {
+            color: white;
+            text-align: center;
+            margin-bottom: 1rem;
+            opacity: 0.9;
+        }
+
+        @media (max-width: 768px) {
+            h1 {
+                font-size: 2rem;
+            }
+
+            .apps-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>🎯 Mini-Apps</h1>
+            <p class="subtitle">A collection of independent web-based tools and utilities</p>
+        </header>
+
+        <div class="search-box">
+            <input type="text" id="searchInput" placeholder="Search apps..." autocomplete="off">
+        </div>
+
+        <div class="filter-tags" id="filterTags"></div>
+
+        <div class="app-count" id="appCount"></div>
+
+        <div class="apps-grid" id="appsGrid"></div>
+
+        <div class="no-results" id="noResults" style="display: none;">
+            No apps found matching your search.
+        </div>
+
+        <footer>
+            <p>Built with Claude Code | <a href="https://github.com" target="_blank">View on GitHub</a></p>
+        </footer>
+    </div>
+
+    <script>
+        let allApps = [];
+        let activeTag = null;
+
+        // Load apps from apps.json
+        async function loadApps() {
+            try {
+                const response = await fetch('apps.json');
+                const data = await response.json();
+                allApps = data.apps;
+                renderApps(allApps);
+                renderTags();
+                updateAppCount(allApps.length);
+            } catch (error) {
+                console.error('Error loading apps:', error);
+                document.getElementById('appsGrid').innerHTML = '<div class="no-results">Error loading apps. Please try again later.</div>';
+            }
+        }
+
+        // Render apps to the grid
+        function renderApps(apps) {
+            const grid = document.getElementById('appsGrid');
+            const noResults = document.getElementById('noResults');
+
+            if (apps.length === 0) {
+                grid.style.display = 'none';
+                noResults.style.display = 'block';
+                return;
+            }
+
+            grid.style.display = 'grid';
+            noResults.style.display = 'none';
+
+            grid.innerHTML = apps.map(app => `
+                <a href="${app.url}" class="app-card" target="_blank" rel="noopener noreferrer">
+                    <h3>${app.name}</h3>
+                    <p>${app.description}</p>
+                    <div class="app-tags">
+                        ${app.tags.map(tag => `<span class="app-tag">${tag}</span>`).join('')}
+                    </div>
+                </a>
+            `).join('');
+        }
+
+        // Render filter tags
+        function renderTags() {
+            const tagsSet = new Set();
+            allApps.forEach(app => {
+                app.tags.forEach(tag => tagsSet.add(tag));
+            });
+
+            const tagsContainer = document.getElementById('filterTags');
+            const tags = Array.from(tagsSet).sort();
+
+            if (tags.length === 0) return;
+
+            tagsContainer.innerHTML = `
+                <button class="tag-filter ${activeTag === null ? 'active' : ''}" onclick="filterByTag(null)">All</button>
+                ${tags.map(tag => `
+                    <button class="tag-filter ${activeTag === tag ? 'active' : ''}" onclick="filterByTag('${tag}')">${tag}</button>
+                `).join('')}
+            `;
+        }
+
+        // Filter apps by tag
+        function filterByTag(tag) {
+            activeTag = tag;
+            const searchTerm = document.getElementById('searchInput').value.toLowerCase();
+            let filtered = allApps;
+
+            if (tag) {
+                filtered = filtered.filter(app => app.tags.includes(tag));
+            }
+
+            if (searchTerm) {
+                filtered = filtered.filter(app =>
+                    app.name.toLowerCase().includes(searchTerm) ||
+                    app.description.toLowerCase().includes(searchTerm) ||
+                    app.tags.some(t => t.toLowerCase().includes(searchTerm))
+                );
+            }
+
+            renderApps(filtered);
+            renderTags();
+            updateAppCount(filtered.length);
+        }
+
+        // Search functionality
+        document.getElementById('searchInput').addEventListener('input', (e) => {
+            const searchTerm = e.target.value.toLowerCase();
+            let filtered = allApps;
+
+            if (activeTag) {
+                filtered = filtered.filter(app => app.tags.includes(activeTag));
+            }
+
+            if (searchTerm) {
+                filtered = filtered.filter(app =>
+                    app.name.toLowerCase().includes(searchTerm) ||
+                    app.description.toLowerCase().includes(searchTerm) ||
+                    app.tags.some(tag => tag.toLowerCase().includes(searchTerm))
+                );
+            }
+
+            renderApps(filtered);
+            updateAppCount(filtered.length);
+        });
+
+        // Update app count
+        function updateAppCount(count) {
+            const countEl = document.getElementById('appCount');
+            countEl.textContent = `${count} ${count === 1 ? 'app' : 'apps'} available`;
+        }
+
+        // Initialize
+        loadApps();
+    </script>
+</body>
+</html>

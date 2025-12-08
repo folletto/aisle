@@ -1,0 +1,20 @@
+[build]
+  publish = "."
+  command = "echo 'Static site - no build needed'"
+
+[build.ignore]
+  # Only rebuild if landing-page directory changed
+  command = "git diff --quiet HEAD^ HEAD ."
+
+[[headers]]
+  for = "/*"
+  [headers.values]
+    X-Frame-Options = "SAMEORIGIN"
+    X-Content-Type-Options = "nosniff"
+    Referrer-Policy = "strict-origin-when-cross-origin"
+
+# SPA fallback (optional, in case you add routing later)
+[[redirects]]
+  from = "/*"
+  to = "/index.html"
+  status = 200
