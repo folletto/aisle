@@ -10,7 +10,7 @@
     {
       "name": "TikTok Quick Embed",
       "description": "Quickly embed TikTok videos on a clean page",
-      "url": "https://tiktok-quick-embed.netlify.app",
+      "url": "https://tiktok-embed.netlify.app",
       "folder": "tiktok-quick-embed",
       "tags": ["social", "video", "utility"]
     },
