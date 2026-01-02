@@ -17,10 +17,6 @@ This project allows you to create, manage, and deploy multiple mini-apps from a 
 ```
 mini-apps/
 ├── apps/                    # Individual mini-apps
-│   ├── hello-world/        # Example app
-│   │   ├── index.html
-│   │   ├── netlify.toml
-│   │   └── README.md
 │   └── [your-app]/         # Your apps here
 │       ├── index.html
 │       ├── netlify.toml
@@ -72,11 +68,11 @@ After deploying, update `landing-page/apps.json` with the actual Netlify URLs:
 {
   "apps": [
     {
-      "name": "Hello World",
-      "description": "A simple example mini-app",
+      "name": "My App",
+      "description": "Description of your app",
       "url": "https://your-app.netlify.app",
-      "folder": "hello-world",
-      "tags": ["example", "demo"]
+      "folder": "my-app",
+      "tags": ["utility", "tool"]
     }
   ]
 }
@@ -155,7 +151,7 @@ The `build.ignore` setting in each `netlify.toml` ensures apps only rebuild when
 
 ## 🌟 Example Apps
 
-- **Hello World** (`/apps/hello-world/`) - Demonstrates the basic structure and capabilities
+Check out the deployed apps at the [landing page](https://the-aisle.netlify.app/).
 
 ## 📝 Configuration Files
 
@@ -205,7 +201,6 @@ Each app needs a `netlify.toml`:
 
 - [Netlify Documentation](https://docs.netlify.com/)
 - [CLAUDE.md](./CLAUDE.md) - Detailed instructions for Claude Code
-- [Example App](./apps/hello-world/) - Reference implementation
 
 ## 📄 License
 
@@ -215,7 +210,6 @@ MIT - Feel free to use this structure for your own mini-apps collection!
 
 For issues or questions:
 - Check [CLAUDE.md](./CLAUDE.md) for detailed instructions
-- Review the example app in `/apps/hello-world/`
 - Open an issue on GitHub
 
 ---
