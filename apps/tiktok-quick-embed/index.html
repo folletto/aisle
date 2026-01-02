@@ -1,0 +1,328 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Quick TikTok video embed generator - paste a TikTok URL and get an embedded video">
+    <title>TikTok Quick Embed</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
+            background: #f8f9fa;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .container {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 2rem;
+            max-width: 800px;
+            margin: 0 auto;
+            width: 100%;
+        }
+
+        header {
+            text-align: center;
+            margin-bottom: 2rem;
+        }
+
+        h1 {
+            color: #333;
+            font-size: 2rem;
+            margin-bottom: 0.5rem;
+        }
+
+        .subtitle {
+            color: #666;
+            font-size: 1rem;
+        }
+
+        .input-section {
+            width: 100%;
+            max-width: 600px;
+            margin-bottom: 2rem;
+        }
+
+        .input-group {
+            display: flex;
+            gap: 0.5rem;
+            margin-bottom: 1rem;
+        }
+
+        input[type="text"] {
+            flex: 1;
+            padding: 0.875rem 1rem;
+            border: 2px solid #e1e4e8;
+            border-radius: 8px;
+            font-size: 1rem;
+            transition: border-color 0.2s;
+        }
+
+        input[type="text"]:focus {
+            outline: none;
+            border-color: #0095f6;
+        }
+
+        button {
+            padding: 0.875rem 1.5rem;
+            background: #0095f6;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+
+        button:hover {
+            background: #0077cc;
+        }
+
+        button:active {
+            background: #005999;
+        }
+
+        .help-text {
+            font-size: 0.875rem;
+            color: #666;
+            text-align: center;
+        }
+
+        .help-text code {
+            background: #f0f0f0;
+            padding: 0.125rem 0.375rem;
+            border-radius: 3px;
+            font-family: 'Courier New', monospace;
+            font-size: 0.875rem;
+        }
+
+        .embed-container {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            width: 100%;
+            min-height: 400px;
+        }
+
+        .embed-wrapper {
+            display: none;
+        }
+
+        .embed-wrapper.active {
+            display: block;
+        }
+
+        .error-message {
+            display: none;
+            background: #fee;
+            color: #c33;
+            padding: 1rem;
+            border-radius: 8px;
+            margin-bottom: 1rem;
+            text-align: center;
+        }
+
+        .error-message.active {
+            display: block;
+        }
+
+        footer {
+            margin-top: auto;
+            padding: 1rem 2rem;
+            border-top: 1px solid #eee;
+            text-align: center;
+            color: #666;
+            font-size: 0.9rem;
+        }
+
+        footer a {
+            color: #0095f6;
+            text-decoration: none;
+        }
+
+        footer a:hover {
+            text-decoration: underline;
+        }
+
+        /* Mobile responsiveness */
+        @media (max-width: 640px) {
+            .container {
+                padding: 1rem;
+            }
+
+            h1 {
+                font-size: 1.5rem;
+            }
+
+            .input-group {
+                flex-direction: column;
+            }
+
+            button {
+                width: 100%;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>TikTok Quick Embed</h1>
+            <p class="subtitle">Paste a TikTok URL to embed the video</p>
+        </header>
+
+        <div class="input-section">
+            <div class="input-group">
+                <input
+                    type="text"
+                    id="tiktokUrl"
+                    placeholder="https://www.tiktok.com/@username/video/1234567890"
+                    aria-label="TikTok URL"
+                >
+                <button id="embedBtn" onclick="embedVideo()">Embed</button>
+            </div>
+            <p class="help-text">
+                Example: <code>https://www.tiktok.com/@germanwithmaggie/video/7583892836232350990</code>
+            </p>
+            <div id="errorMessage" class="error-message"></div>
+        </div>
+
+        <div class="embed-container">
+            <div id="embedWrapper" class="embed-wrapper"></div>
+        </div>
+    </div>
+
+    <footer>
+        <a href="/">← Back to all apps</a>
+    </footer>
+
+    <script>
+        // Load the TikTok embed script
+        function loadTikTokScript() {
+            if (!document.querySelector('script[src="https://www.tiktok.com/embed.js"]')) {
+                const script = document.createElement('script');
+                script.src = 'https://www.tiktok.com/embed.js';
+                script.async = true;
+                document.body.appendChild(script);
+            }
+        }
+
+        // Extract video ID from TikTok URL
+        function extractVideoId(url) {
+            // TikTok URL patterns:
+            // https://www.tiktok.com/@username/video/1234567890
+            // https://vm.tiktok.com/ZMxxxx/
+            // https://www.tiktok.com/t/ZTxxxx/
+
+            try {
+                const urlObj = new URL(url);
+
+                // Standard format: @username/video/ID
+                const videoMatch = url.match(/\/video\/(\d+)/);
+                if (videoMatch) {
+                    return videoMatch[1];
+                }
+
+                return null;
+            } catch (e) {
+                return null;
+            }
+        }
+
+        // Show error message
+        function showError(message) {
+            const errorEl = document.getElementById('errorMessage');
+            errorEl.textContent = message;
+            errorEl.classList.add('active');
+
+            setTimeout(() => {
+                errorEl.classList.remove('active');
+            }, 5000);
+        }
+
+        // Clear embed
+        function clearEmbed() {
+            const wrapper = document.getElementById('embedWrapper');
+            wrapper.innerHTML = '';
+            wrapper.classList.remove('active');
+        }
+
+        // Embed video
+        function embedVideo() {
+            const urlInput = document.getElementById('tiktokUrl');
+            const url = urlInput.value.trim();
+
+            if (!url) {
+                showError('Please enter a TikTok URL');
+                return;
+            }
+
+            const videoId = extractVideoId(url);
+
+            if (!videoId) {
+                showError('Invalid TikTok URL. Please use a URL like: https://www.tiktok.com/@username/video/1234567890');
+                return;
+            }
+
+            // Clear any previous embed
+            clearEmbed();
+
+            // Create the embed
+            const wrapper = document.getElementById('embedWrapper');
+
+            const blockquote = document.createElement('blockquote');
+            blockquote.className = 'tiktok-embed';
+            blockquote.setAttribute('cite', url);
+            blockquote.setAttribute('data-video-id', videoId);
+            blockquote.style.cssText = 'max-width: 605px; min-width: 325px;';
+
+            // Add section content (TikTok script will populate this)
+            const section = document.createElement('section');
+            section.innerHTML = `<a target="_blank" href="${url}">View on TikTok</a>`;
+            blockquote.appendChild(section);
+
+            wrapper.appendChild(blockquote);
+            wrapper.classList.add('active');
+
+            // Load and refresh TikTok embed script
+            loadTikTokScript();
+
+            // Trigger TikTok embed refresh if available
+            setTimeout(() => {
+                if (window.tiktokEmbed) {
+                    window.tiktokEmbed.lib.render(blockquote);
+                }
+            }, 100);
+        }
+
+        // Allow Enter key to trigger embed
+        document.getElementById('tiktokUrl').addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                embedVideo();
+            }
+        });
+
+        // Check for URL in query parameters on load
+        window.addEventListener('DOMContentLoaded', function() {
+            const params = new URLSearchParams(window.location.search);
+            const urlParam = params.get('url');
+
+            if (urlParam) {
+                document.getElementById('tiktokUrl').value = urlParam;
+                embedVideo();
+            }
+        });
+    </script>
+</body>
+</html>
