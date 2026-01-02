@@ -167,6 +167,14 @@
             align-items: center;
         }
 
+        .embed-iframe {
+            border: none;
+            width: 100%;
+            max-width: 605px;
+            height: 800px;
+            background: transparent;
+        }
+
         .preview-link {
             color: #fff;
             text-decoration: underline;
@@ -196,6 +204,11 @@
 
             button {
                 width: 100%;
+            }
+
+            .embed-iframe {
+                max-width: 100%;
+                height: 700px;
             }
         }
     </style>
@@ -232,38 +245,6 @@
     </div>
 
     <script>
-        // Track loaded TikTok script
-        let tiktokScriptLoaded = false;
-
-        // Load the TikTok embed script
-        function loadTikTokScript(callback) {
-            const existingScript = document.querySelector('script[src="https://www.tiktok.com/embed.js"]');
-
-            if (existingScript) {
-                // Script already exists, ensure it's loaded
-                if (tiktokScriptLoaded && window.tiktokEmbed) {
-                    if (callback) callback();
-                    return;
-                }
-                // Wait for it to load
-                existingScript.addEventListener('load', () => {
-                    tiktokScriptLoaded = true;
-                    if (callback) callback();
-                });
-                return;
-            }
-
-            // Create new script
-            const script = document.createElement('script');
-            script.src = 'https://www.tiktok.com/embed.js';
-            script.async = true;
-            script.addEventListener('load', () => {
-                tiktokScriptLoaded = true;
-                if (callback) callback();
-            });
-            document.body.appendChild(script);
-        }
-
         // Extract video ID from TikTok URL or accept video ID directly
         function extractVideoId(input) {
             // If it's just a numeric string, treat it as a video ID
@@ -302,37 +283,93 @@
             }, 5000);
         }
 
-        // Clear embed completely
-        function clearEmbed() {
+        /**
+         * Open TikTok embed in an isolated iframe
+         * @param {string} videoId - The TikTok video ID
+         * @param {string} videoUrl - The full TikTok URL
+         */
+        function openEmbed(videoId, videoUrl) {
             const wrapper = document.getElementById('embedWrapper');
 
-            // Remove all child nodes completely
-            while (wrapper.firstChild) {
-                wrapper.removeChild(wrapper.firstChild);
-            }
-        }
+            // Create iframe element
+            const iframe = document.createElement('iframe');
+            iframe.className = 'embed-iframe';
+            iframe.id = 'tiktokEmbedIframe';
 
-        // Show video view
-        function showVideoView() {
+            // Create the HTML content for the iframe using srcdoc
+            const iframeContent = `
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            background: transparent;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+        }
+    </style>
+</head>
+<body>
+    <blockquote
+        class="tiktok-embed"
+        cite="${videoUrl}"
+        data-video-id="${videoId}"
+        style="max-width: 605px; min-width: 325px;">
+        <section>
+            <a target="_blank" title="@tiktok" href="${videoUrl}">View on TikTok</a>
+        </section>
+    </blockquote>
+    <script async src="https://www.tiktok.com/embed.js"></script>
+</body>
+</html>
+            `.trim();
+
+            // Set the iframe content
+            iframe.srcdoc = iframeContent;
+
+            // Add iframe to wrapper
+            wrapper.appendChild(iframe);
+
+            // Show video view
             document.getElementById('formView').classList.add('hidden');
             document.getElementById('videoView').classList.add('active');
+
+            // Update URL with hash
+            window.location.hash = `video=${videoId}`;
         }
 
-        // Close video and return to form
-        function closeVideo() {
+        /**
+         * Close the embed and remove the iframe completely
+         */
+        function closeEmbed() {
+            const wrapper = document.getElementById('embedWrapper');
+            const iframe = document.getElementById('tiktokEmbedIframe');
+
+            // Remove iframe if it exists
+            if (iframe) {
+                iframe.remove();
+            }
+
+            // Hide video view and show form
             document.getElementById('videoView').classList.remove('active');
             document.getElementById('formView').classList.remove('hidden');
-
-            // Clear embed with a small delay to ensure smooth transition
-            setTimeout(() => {
-                clearEmbed();
-            }, 100);
 
             // Clear hash from URL
             history.pushState('', document.title, window.location.pathname + window.location.search);
         }
 
-        // Embed video
+        // Wrapper function for UI button
+        function closeVideo() {
+            closeEmbed();
+        }
+
+        // Embed video (main entry point from UI)
         function embedVideo(videoUrl = null, videoId = null) {
             let url = videoUrl;
             let id = videoId;
@@ -357,41 +394,11 @@
                 url = `https://www.tiktok.com/video/${id}`;
             }
 
-            // Clear any previous embed completely
-            clearEmbed();
+            // Close any existing embed first
+            closeEmbed();
 
-            // Create the embed
-            const wrapper = document.getElementById('embedWrapper');
-
-            const blockquote = document.createElement('blockquote');
-            blockquote.className = 'tiktok-embed';
-            blockquote.setAttribute('cite', url);
-            blockquote.setAttribute('data-video-id', id);
-            blockquote.style.cssText = 'max-width: 605px; min-width: 325px;';
-
-            // Add section content (TikTok script will populate this)
-            const section = document.createElement('section');
-            section.innerHTML = `<a target="_blank" href="${url}">View on TikTok</a>`;
-            blockquote.appendChild(section);
-
-            wrapper.appendChild(blockquote);
-
-            // Show video view
-            showVideoView();
-
-            // Update URL with hash
-            window.location.hash = `video=${id}`;
-
-            // Load TikTok script and render embed
-            loadTikTokScript(() => {
-                // Force render the embed
-                if (window.tiktokEmbed && window.tiktokEmbed.lib) {
-                    // Wait a bit to ensure DOM is ready
-                    setTimeout(() => {
-                        window.tiktokEmbed.lib.render(blockquote);
-                    }, 100);
-                }
-            });
+            // Open new embed in iframe
+            openEmbed(id, url);
         }
 
         // Allow Enter key to trigger embed
@@ -411,7 +418,6 @@
 
                 if (videoId) {
                     // Construct TikTok URL from video ID
-                    // Note: We don't have the username, so we just use the video ID
                     const url = `https://www.tiktok.com/video/${videoId}`;
                     embedVideo(url, videoId);
                     return;
