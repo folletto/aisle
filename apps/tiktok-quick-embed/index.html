@@ -31,6 +31,18 @@
             width: 100%;
         }
 
+        /* Form view */
+        .form-view {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            width: 100%;
+        }
+
+        .form-view.hidden {
+            display: none;
+        }
+
         header {
             text-align: center;
             margin-bottom: 2rem;
@@ -107,22 +119,6 @@
             font-size: 0.875rem;
         }
 
-        .embed-container {
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            width: 100%;
-            min-height: 400px;
-        }
-
-        .embed-wrapper {
-            display: none;
-        }
-
-        .embed-wrapper.active {
-            display: block;
-        }
-
         .error-message {
             display: none;
             background: #fee;
@@ -137,22 +133,55 @@
             display: block;
         }
 
-        footer {
-            margin-top: auto;
-            padding: 1rem 2rem;
-            border-top: 1px solid #eee;
-            text-align: center;
-            color: #666;
-            font-size: 0.9rem;
+        /* Video view */
+        .video-view {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: #fff;
+            z-index: 1000;
         }
 
-        footer a {
-            color: #0095f6;
-            text-decoration: none;
+        .video-view.active {
+            display: flex;
+            justify-content: center;
+            align-items: center;
         }
 
-        footer a:hover {
-            text-decoration: underline;
+        .close-btn {
+            position: fixed;
+            top: 1rem;
+            right: 1rem;
+            width: 40px;
+            height: 40px;
+            background: rgba(0, 0, 0, 0.5);
+            color: white;
+            border: none;
+            border-radius: 50%;
+            font-size: 1.5rem;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: background 0.2s;
+            z-index: 1001;
+            padding: 0;
+            line-height: 1;
+        }
+
+        .close-btn:hover {
+            background: rgba(0, 0, 0, 0.7);
+        }
+
+        .embed-wrapper {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            width: 100%;
+            height: 100%;
         }
 
         /* Mobile responsiveness */
@@ -172,40 +201,45 @@
             button {
                 width: 100%;
             }
+
+            .close-btn {
+                width: 36px;
+                height: 36px;
+                font-size: 1.25rem;
+            }
         }
     </style>
 </head>
 <body>
     <div class="container">
-        <header>
-            <h1>TikTok Quick Embed</h1>
-            <p class="subtitle">Paste a TikTok URL to embed the video</p>
-        </header>
+        <div id="formView" class="form-view">
+            <header>
+                <h1>TikTok Quick Embed</h1>
+                <p class="subtitle">Paste a TikTok URL to embed the video</p>
+            </header>
 
-        <div class="input-section">
-            <div class="input-group">
-                <input
-                    type="text"
-                    id="tiktokUrl"
-                    placeholder="https://www.tiktok.com/@username/video/1234567890"
-                    aria-label="TikTok URL"
-                >
-                <button id="embedBtn" onclick="embedVideo()">Embed</button>
+            <div class="input-section">
+                <div class="input-group">
+                    <input
+                        type="text"
+                        id="tiktokUrl"
+                        placeholder="https://www.tiktok.com/@username/video/1234567890"
+                        aria-label="TikTok URL"
+                    >
+                    <button id="embedBtn" onclick="embedVideo()">Embed</button>
+                </div>
+                <p class="help-text">
+                    Example: <code>https://www.tiktok.com/@germanwithmaggie/video/7583892836232350990</code>
+                </p>
+                <div id="errorMessage" class="error-message"></div>
             </div>
-            <p class="help-text">
-                Example: <code>https://www.tiktok.com/@germanwithmaggie/video/7583892836232350990</code>
-            </p>
-            <div id="errorMessage" class="error-message"></div>
-        </div>
-
-        <div class="embed-container">
-            <div id="embedWrapper" class="embed-wrapper"></div>
         </div>
     </div>
 
-    <footer>
-        <a href="/">← Back to all apps</a>
-    </footer>
+    <div id="videoView" class="video-view">
+        <button class="close-btn" onclick="closeVideo()" aria-label="Close video">×</button>
+        <div id="embedWrapper" class="embed-wrapper"></div>
+    </div>
 
     <script>
         // Load the TikTok embed script
@@ -255,24 +289,44 @@
         function clearEmbed() {
             const wrapper = document.getElementById('embedWrapper');
             wrapper.innerHTML = '';
-            wrapper.classList.remove('active');
+        }
+
+        // Show video view
+        function showVideoView() {
+            document.getElementById('formView').classList.add('hidden');
+            document.getElementById('videoView').classList.add('active');
+        }
+
+        // Close video and return to form
+        function closeVideo() {
+            document.getElementById('videoView').classList.remove('active');
+            document.getElementById('formView').classList.remove('hidden');
+            clearEmbed();
+
+            // Clear hash from URL
+            history.pushState('', document.title, window.location.pathname + window.location.search);
         }
 
         // Embed video
-        function embedVideo() {
-            const urlInput = document.getElementById('tiktokUrl');
-            const url = urlInput.value.trim();
+        function embedVideo(videoUrl = null, videoId = null) {
+            let url = videoUrl;
+            let id = videoId;
 
             if (!url) {
-                showError('Please enter a TikTok URL');
-                return;
-            }
+                const urlInput = document.getElementById('tiktokUrl');
+                url = urlInput.value.trim();
 
-            const videoId = extractVideoId(url);
+                if (!url) {
+                    showError('Please enter a TikTok URL');
+                    return;
+                }
 
-            if (!videoId) {
-                showError('Invalid TikTok URL. Please use a URL like: https://www.tiktok.com/@username/video/1234567890');
-                return;
+                id = extractVideoId(url);
+
+                if (!id) {
+                    showError('Invalid TikTok URL. Please use a URL like: https://www.tiktok.com/@username/video/1234567890');
+                    return;
+                }
             }
 
             // Clear any previous embed
@@ -284,7 +338,7 @@
             const blockquote = document.createElement('blockquote');
             blockquote.className = 'tiktok-embed';
             blockquote.setAttribute('cite', url);
-            blockquote.setAttribute('data-video-id', videoId);
+            blockquote.setAttribute('data-video-id', id);
             blockquote.style.cssText = 'max-width: 605px; min-width: 325px;';
 
             // Add section content (TikTok script will populate this)
@@ -293,7 +347,12 @@
             blockquote.appendChild(section);
 
             wrapper.appendChild(blockquote);
-            wrapper.classList.add('active');
+
+            // Show video view
+            showVideoView();
+
+            // Update URL with hash
+            window.location.hash = `video=${id}`;
 
             // Load and refresh TikTok embed script
             loadTikTokScript();
@@ -313,8 +372,24 @@
             }
         });
 
-        // Check for URL in query parameters on load
+        // Check for hash or query parameters on load
         window.addEventListener('DOMContentLoaded', function() {
+            // Check for hash first (e.g., #video=7583892836232350990)
+            const hash = window.location.hash.substring(1);
+            if (hash) {
+                const params = new URLSearchParams(hash);
+                const videoId = params.get('video');
+
+                if (videoId) {
+                    // Construct TikTok URL from video ID
+                    // Note: We don't have the username, so we just use the video ID
+                    const url = `https://www.tiktok.com/video/${videoId}`;
+                    embedVideo(url, videoId);
+                    return;
+                }
+            }
+
+            // Fall back to query parameters (legacy support)
             const params = new URLSearchParams(window.location.search);
             const urlParam = params.get('url');
 
