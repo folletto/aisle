@@ -141,47 +141,35 @@
             left: 0;
             width: 100%;
             height: 100%;
-            background: #fff;
+            background: #000;
             z-index: 1000;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            gap: 1.5rem;
         }
 
         .video-view.active {
             display: flex;
-            justify-content: center;
-            align-items: center;
-        }
-
-        .close-btn {
-            position: fixed;
-            top: 1rem;
-            right: 1rem;
-            width: 40px;
-            height: 40px;
-            background: rgba(0, 0, 0, 0.5);
-            color: white;
-            border: none;
-            border-radius: 50%;
-            font-size: 1.5rem;
-            cursor: pointer;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            transition: background 0.2s;
-            z-index: 1001;
-            padding: 0;
-            line-height: 1;
-        }
-
-        .close-btn:hover {
-            background: rgba(0, 0, 0, 0.7);
         }
 
         .embed-wrapper {
             display: flex;
             justify-content: center;
             align-items: center;
-            width: 100%;
-            height: 100%;
+        }
+
+        .preview-link {
+            color: #fff;
+            text-decoration: none;
+            font-size: 1rem;
+            cursor: pointer;
+            transition: opacity 0.2s;
+            padding: 0.5rem 1rem;
+        }
+
+        .preview-link:hover {
+            opacity: 0.7;
         }
 
         /* Mobile responsiveness */
@@ -202,10 +190,8 @@
                 width: 100%;
             }
 
-            .close-btn {
-                width: 36px;
-                height: 36px;
-                font-size: 1.25rem;
+            .preview-link {
+                font-size: 0.9rem;
             }
         }
     </style>
@@ -215,7 +201,7 @@
         <div id="formView" class="form-view">
             <header>
                 <h1>TikTok Quick Embed</h1>
-                <p class="subtitle">Paste a TikTok URL to embed the video</p>
+                <p class="subtitle">Paste a TikTok URL or video ID to preview the video</p>
             </header>
 
             <div class="input-section">
@@ -223,13 +209,13 @@
                     <input
                         type="text"
                         id="tiktokUrl"
-                        placeholder="https://www.tiktok.com/@username/video/1234567890"
-                        aria-label="TikTok URL"
+                        placeholder="https://www.tiktok.com/@username/video/1234567890 or just 1234567890"
+                        aria-label="TikTok URL or video ID"
                     >
-                    <button id="embedBtn" onclick="embedVideo()">Embed</button>
+                    <button id="embedBtn" onclick="embedVideo()">Preview</button>
                 </div>
                 <p class="help-text">
-                    Example: <code>https://www.tiktok.com/@germanwithmaggie/video/7583892836232350990</code>
+                    Example: <code>https://www.tiktok.com/@germanwithmaggie/video/7583892836232350990</code> or <code>7583892836232350990</code>
                 </p>
                 <div id="errorMessage" class="error-message"></div>
             </div>
@@ -237,8 +223,8 @@
     </div>
 
     <div id="videoView" class="video-view">
-        <button class="close-btn" onclick="closeVideo()" aria-label="Close video">×</button>
         <div id="embedWrapper" class="embed-wrapper"></div>
+        <a class="preview-link" onclick="closeVideo()" href="javascript:void(0)">Preview a different URL</a>
     </div>
 
     <script>
@@ -252,18 +238,23 @@
             }
         }
 
-        // Extract video ID from TikTok URL
-        function extractVideoId(url) {
+        // Extract video ID from TikTok URL or accept video ID directly
+        function extractVideoId(input) {
+            // If it's just a numeric string, treat it as a video ID
+            if (/^\d+$/.test(input.trim())) {
+                return input.trim();
+            }
+
             // TikTok URL patterns:
             // https://www.tiktok.com/@username/video/1234567890
             // https://vm.tiktok.com/ZMxxxx/
             // https://www.tiktok.com/t/ZTxxxx/
 
             try {
-                const urlObj = new URL(url);
+                const urlObj = new URL(input);
 
                 // Standard format: @username/video/ID
-                const videoMatch = url.match(/\/video\/(\d+)/);
+                const videoMatch = input.match(/\/video\/(\d+)/);
                 if (videoMatch) {
                     return videoMatch[1];
                 }
@@ -314,19 +305,22 @@
 
             if (!url) {
                 const urlInput = document.getElementById('tiktokUrl');
-                url = urlInput.value.trim();
+                const input = urlInput.value.trim();
 
-                if (!url) {
-                    showError('Please enter a TikTok URL');
+                if (!input) {
+                    showError('Please enter a TikTok URL or video ID');
                     return;
                 }
 
-                id = extractVideoId(url);
+                id = extractVideoId(input);
 
                 if (!id) {
-                    showError('Invalid TikTok URL. Please use a URL like: https://www.tiktok.com/@username/video/1234567890');
+                    showError('Invalid TikTok URL or video ID. Please use a URL like: https://www.tiktok.com/@username/video/1234567890 or just the video ID');
                     return;
                 }
+
+                // Construct URL from video ID if we only have the ID
+                url = `https://www.tiktok.com/video/${id}`;
             }
 
             // Clear any previous embed
