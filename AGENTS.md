@@ -17,9 +17,9 @@ mini-apps/
 │   │   └── ...
 ├── landing-page/
 │   ├── index.html          # Links to all apps
-│   ├── netlify.toml
-│   └── apps.json           # Configuration of all apps
-├── CLAUDE.md               # This file
+│   └── netlify.toml
+├── apps.json               # Configuration of all apps (source of truth)
+├── AGENTS.md               # This file
 └── README.md
 ```
 
@@ -114,9 +114,9 @@ Use this as a starting template for `index.html`:
 </html>
 ```
 
-### 5. Update Landing Page
+### 5. Register the App
 
-After creating a new app, update `/landing-page/apps.json`:
+After creating the app files, add an entry to `/apps.json` at the repo root **without a `url` field**:
 
 ```json
 {
@@ -124,7 +124,6 @@ After creating a new app, update `/landing-page/apps.json`:
     {
       "name": "App Name",
       "description": "Brief description",
-      "url": "https://app-name.netlify.app",
       "folder": "app-name",
       "tags": ["utility", "tool"]
     }
@@ -132,7 +131,7 @@ After creating a new app, update `/landing-page/apps.json`:
 }
 ```
 
-The landing page will automatically display the new app.
+The `deploy-netlify-new` GitHub Action will automatically detect the missing `url`, create a Netlify site named `aisle-<folder>` (e.g. `https://aisle-app-name.netlify.app`), and write the URL back to `apps.json`. The landing page will then display the new app.
 
 ## Development Guidelines
 
@@ -158,17 +157,15 @@ The landing page will automatically display the new app.
 
 ## Netlify Deployment
 
-Each app is deployed as a separate Netlify site:
+Each app is deployed as a separate Netlify site, automatically via the `deploy-netlify-new` GitHub Action:
 
-1. **Create new site** in Netlify dashboard
-2. **Link to GitHub** repository
-3. **Set base directory** to `apps/<app-name>`
-4. **Build settings** are read from app's `netlify.toml`
-5. **Auto-deploys** only when that app's files change
+1. Add entry to `apps.json` (no `url` field)
+2. Create the `apps/<app-name>` directory with required files
+3. Push to `main` — the action creates the Netlify site with `aisle-<app-name>` as the project name and writes the URL back to `apps.json`
 
-The landing page is also a separate Netlify site with base directory `landing-page`.
+The landing page is a separate Netlify site with base directory `landing-page`. It reads `apps.json` via a proxy redirect.
 
-## Tips for Claude Code
+## Tips for AI Agents
 
 - Always create fully functional, production-ready apps
 - Include error handling and edge cases

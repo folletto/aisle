@@ -11,6 +11,13 @@
     X-Content-Type-Options = "nosniff"
     Referrer-Policy = "strict-origin-when-cross-origin"
 
+# Proxy apps.json from repo root (single source of truth)
+[[redirects]]
+  from = "/apps.json"
+  to = "https://raw.githubusercontent.com/folletto/aisle/main/apps.json"
+  status = 200
+  force = true
+
 # SPA fallback (optional, in case you add routing later)
 [[redirects]]
   from = "/*"
