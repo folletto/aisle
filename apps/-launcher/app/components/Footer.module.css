@@ -1,17 +1,24 @@
 .footer {
-  text-align: center;
-  padding: 2.5rem 1rem;
-  font-size: 0.8rem;
+  position: sticky;
+  bottom: 0;
+  text-align: right;
+  padding: 0.75rem 1rem;
+  font-size: 0.78rem;
   color: var(--color-text-muted);
+  /* Subtle backdrop so the text stays readable when overlapping content */
+  background: rgba(255, 255, 255, 0.85);
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
 }
 
-.footer a {
-  color: var(--color-blue-mid);
-  text-decoration: none;
-  transition: color 0.15s;
+.buildTime {
+  opacity: 0.75;
 }
 
-.footer a:hover {
-  color: var(--color-blue-link);
-  text-decoration: underline;
+/* Fallback: if sticky is not supported or not needed, the footer still sits
+   naturally at the bottom of the flex column (from .page layout). */
+@supports not (position: sticky) {
+  .footer {
+    position: static;
+  }
 }

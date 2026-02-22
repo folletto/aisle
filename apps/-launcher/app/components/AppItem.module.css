@@ -9,6 +9,8 @@
   -webkit-tap-highlight-color: transparent;
   text-decoration: none;
   color: inherit;
+  width: 88px;
+  flex-shrink: 0;
 }
 
 .item:active {
@@ -63,6 +65,10 @@
 }
 
 @media (min-width: 480px) {
+  .item {
+    width: 100px;
+  }
+
   .iconWrap {
     width: 80px;
     height: 80px;
