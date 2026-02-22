@@ -1,0 +1,17 @@
+.footer {
+  text-align: center;
+  padding: 2.5rem 1rem;
+  font-size: 0.8rem;
+  color: var(--color-text-muted);
+}
+
+.footer a {
+  color: var(--color-blue-mid);
+  text-decoration: none;
+  transition: color 0.15s;
+}
+
+.footer a:hover {
+  color: var(--color-blue-link);
+  text-decoration: underline;
+}
