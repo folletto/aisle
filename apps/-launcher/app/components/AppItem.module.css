@@ -1,4 +1,4 @@
-.card {
+.item {
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -6,19 +6,13 @@
   padding: 0.5rem;
   border-radius: 16px;
   cursor: pointer;
-  transition: transform 0.12s ease, opacity 0.12s ease;
   -webkit-tap-highlight-color: transparent;
   text-decoration: none;
   color: inherit;
 }
 
-.card:hover {
-  transform: scale(1.06);
-}
-
-.card:active {
-  transform: scale(0.97);
-  opacity: 0.85;
+.item:active {
+  opacity: 0.8;
 }
 
 .disabled {
@@ -34,10 +28,25 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  /* Soft inner shadow to give depth like iOS icons */
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.25),
-    0 2px 8px rgba(0, 0, 0, 0.15);
   flex-shrink: 0;
+  /* Base shadow — icon resting on the surface */
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.25),
+    0 2px 6px rgba(0, 0, 0, 0.14);
+  transform: translateY(0);
+  /* Animate both shadow and position together */
+  transition:
+    box-shadow 0.18s ease,
+    transform 0.18s ease;
+}
+
+/* Parent hover lifts the icon: shadow grows and blurs as distance increases */
+.item:hover .iconWrap {
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.25),
+    0 10px 28px rgba(0, 0, 0, 0.2),
+    0 4px 10px rgba(0, 0, 0, 0.1);
+  transform: translateY(-3px) scale(1.06);
 }
 
 .name {
@@ -46,7 +55,6 @@
   text-align: center;
   color: var(--color-text);
   max-width: 80px;
-  /* Allow 2 lines max, then ellipsis */
   display: -webkit-box;
   -webkit-line-clamp: 2;
   -webkit-box-orient: vertical;

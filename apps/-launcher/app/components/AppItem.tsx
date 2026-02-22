@@ -1,6 +1,5 @@
-import type { LucideProps } from "lucide-react";
-import type { ComponentType } from "react";
-import styles from "./Card.module.css";
+import { getAppIcon } from "~/utils/appIcons";
+import styles from "./AppItem.module.css";
 
 interface App {
   name: string;
@@ -10,13 +9,12 @@ interface App {
   tags: string[];
 }
 
-interface CardProps {
+interface AppItemProps {
   app: App;
-  Icon: ComponentType<LucideProps>;
-  iconBg: string;
 }
 
-export default function Card({ app, Icon, iconBg }: CardProps) {
+export default function AppItem({ app }: AppItemProps) {
+  const { Icon, iconBg } = getAppIcon(app);
   const hasUrl = Boolean(app.url);
 
   const content = (
@@ -29,13 +27,15 @@ export default function Card({ app, Icon, iconBg }: CardProps) {
   );
 
   if (!hasUrl) {
-    return <div className={`${styles.card} ${styles.disabled}`}>{content}</div>;
+    return (
+      <div className={`${styles.item} ${styles.disabled}`}>{content}</div>
+    );
   }
 
   return (
     <a
       href={app.url}
-      className={styles.card}
+      className={styles.item}
       target="_blank"
       rel="noopener noreferrer"
       title={app.description}

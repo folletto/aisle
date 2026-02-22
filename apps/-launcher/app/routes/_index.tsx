@@ -1,9 +1,8 @@
 import { useState } from "react";
 import { useLoaderData } from "react-router";
-import Card from "~/components/Card";
+import AppItem from "~/components/AppItem";
 import Footer from "~/components/Footer";
 import GlobalNav from "~/components/GlobalNav";
-import { getAppIcon } from "~/utils/appIcons";
 import styles from "./_index.module.css";
 
 interface App {
@@ -18,7 +17,8 @@ export async function clientLoader() {
   const response = await fetch("/apps.json");
   if (!response.ok) throw new Error("Failed to load apps");
   const data = (await response.json()) as { apps: App[] };
-  return data.apps;
+  // Exclude the launcher itself from the list
+  return data.apps.filter((app) => app.folder !== "-launcher");
 }
 
 export default function Index() {
@@ -46,12 +46,9 @@ export default function Index() {
           <p className={styles.empty}>No apps match &ldquo;{query}&rdquo;</p>
         ) : (
           <div className={styles.grid}>
-            {filtered.map((app) => {
-              const { Icon, iconBg } = getAppIcon(app);
-              return (
-                <Card key={app.folder} app={app} Icon={Icon} iconBg={iconBg} />
-              );
-            })}
+            {filtered.map((app) => (
+              <AppItem key={app.folder} app={app} />
+            ))}
           </div>
         )}
       </main>
