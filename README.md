@@ -21,10 +21,9 @@ mini-apps/
 │       ├── index.html
 │       ├── netlify.toml
 │       └── ...
-├── landing-page/           # Central portal
-│   ├── index.html          # Main landing page
-│   ├── apps.json           # App registry
-│   └── netlify.toml
+│   └── -launcher/          # Central portal (launcher)
+│       ├── index.html      # Main landing page
+│       └── netlify.toml
 ├── CLAUDE.md               # Instructions for Claude Code
 └── README.md               # This file
 ```
@@ -45,7 +44,7 @@ cd mini-apps
 2. Click "Add new site" → "Import an existing project"
 3. Connect to your GitHub repository
 4. Configure build settings:
-   - **Base directory**: `landing-page`
+   - **Base directory**: `apps/-launcher`
    - **Build command**: (leave empty, uses netlify.toml)
    - **Publish directory**: (leave empty, uses netlify.toml)
 5. Deploy!
@@ -62,7 +61,7 @@ Repeat for each app in `/apps/`:
 
 ### 3. Update App URLs
 
-After deploying, update `landing-page/apps.json` with the actual Netlify URLs:
+After deploying, update `apps.json` with the actual Netlify URLs:
 
 ```json
 {
@@ -108,7 +107,7 @@ See [CLAUDE.md](./CLAUDE.md) for detailed instructions that Claude Code follows.
    - `index.html` - Your app's HTML
    - `netlify.toml` - Netlify configuration (copy from template in CLAUDE.md)
 
-3. Update `landing-page/apps.json`:
+3. Update `apps.json`:
    ```json
    {
      "apps": [

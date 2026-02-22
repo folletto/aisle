@@ -15,9 +15,9 @@ mini-apps/
 │   │   ├── index.html
 │   │   ├── netlify.toml
 │   │   └── ...
-├── landing-page/
-│   ├── index.html          # Links to all apps
-│   └── netlify.toml
+│   └── -launcher/
+│       ├── index.html      # Links to all apps
+│       └── netlify.toml
 ├── apps.json               # Configuration of all apps (source of truth)
 ├── AGENTS.md               # This file
 └── README.md
@@ -163,7 +163,7 @@ Each app is deployed as a separate Netlify site, automatically via the `deploy-n
 2. Create the `apps/<app-name>` directory with required files
 3. Push to `main` — the action creates the Netlify site with `aisle-<app-name>` as the project name and writes the URL back to `apps.json`
 
-The landing page is a separate Netlify site with base directory `landing-page`. It reads `apps.json` via a proxy redirect.
+The landing page is a separate Netlify site with base directory `apps/-launcher`. It reads `apps.json` via a proxy redirect.
 
 ## Tips for AI Agents
 

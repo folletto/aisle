@@ -1,6 +1,13 @@
 {
   "apps": [
     {
+      "name": "Aisle",
+      "description": "The main launcher listing all apps",
+      "url": "https://the-aisle.netlify.app",
+      "folder": "-launcher",
+      "tags": ["meta"]
+    },
+    {
       "name": "Date Picker Calendar",
       "description": "Pick dates on a calendar and share them easily",
       "url": "https://aisle-cal-pick-to-share.netlify.app",
