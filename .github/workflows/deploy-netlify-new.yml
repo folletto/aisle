@@ -1,0 +1,108 @@
+name: Deploy New Netlify App
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'apps.json'
+
+permissions:
+  contents: write
+
+jobs:
+  deploy-new-apps:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Find undeployed apps
+        id: find
+        run: |
+          UNDEPLOYED=$(jq -r '.apps[] | select(.url == null or .url == "") | .folder' apps.json)
+          echo "folders<<EOF" >> $GITHUB_OUTPUT
+          echo "$UNDEPLOYED" >> $GITHUB_OUTPUT
+          echo "EOF" >> $GITHUB_OUTPUT
+
+      - name: Create Netlify sites for undeployed apps
+        if: steps.find.outputs.folders != ''
+        env:
+          NETLIFY_AUTH_TOKEN: ${{ secrets.NETLIFY_AUTH_TOKEN }}
+          NETLIFY_TEAM_ID: ${{ secrets.NETLIFY_TEAM_ID }}
+          GITHUB_REPO: ${{ github.repository }}
+        run: |
+          # Fetch the GitHub App installation ID linked to this Netlify account
+          INSTALL_ID=$(curl -s "https://api.netlify.com/api/v1/github_apps/installations" \
+            -H "Authorization: Bearer $NETLIFY_AUTH_TOKEN" \
+            | jq -r '.[0].github_app_installation_id')
+
+          if [ -z "$INSTALL_ID" ] || [ "$INSTALL_ID" = "null" ]; then
+            echo "ERROR: Could not retrieve GitHub App installation ID from Netlify account"
+            exit 1
+          fi
+          echo "GitHub App installation ID: $INSTALL_ID"
+
+          while IFS= read -r FOLDER; do
+            [ -z "$FOLDER" ] && continue
+
+            echo "──────────────────────────────────────"
+            echo "Processing folder: $FOLDER"
+
+            # Guard: folder must exist in the repo
+            if [ ! -d "apps/$FOLDER" ]; then
+              echo "WARNING: apps/$FOLDER not found in repository — skipping"
+              continue
+            fi
+
+            SITE_NAME="aisle-$FOLDER"
+            echo "Creating Netlify site: $SITE_NAME"
+
+            RESPONSE=$(curl -s -X POST "https://api.netlify.com/api/v1/sites" \
+              -H "Authorization: Bearer $NETLIFY_AUTH_TOKEN" \
+              -H "Content-Type: application/json" \
+              -d "{
+                \"name\": \"$SITE_NAME\",
+                \"account_slug\": \"$NETLIFY_TEAM_ID\",
+                \"repo\": {
+                  \"provider\": \"github\",
+                  \"repo\": \"$GITHUB_REPO\",
+                  \"private\": false,
+                  \"branch\": \"main\",
+                  \"base_dir\": \"apps/$FOLDER\",
+                  \"cmd\": \"echo 'Static site - no build needed'\",
+                  \"dir\": \".\",
+                  \"installation_id\": $INSTALL_ID
+                }
+              }")
+
+            SITE_URL=$(echo "$RESPONSE" | jq -r '.ssl_url // empty')
+
+            if [ -z "$SITE_URL" ]; then
+              echo "ERROR: Failed to create Netlify site for $FOLDER. API response:"
+              echo "$RESPONSE" | jq .
+              echo "Skipping — url will remain empty so the next run can retry"
+              continue
+            fi
+
+            echo "Site created: $SITE_URL"
+
+            # Write the url back into apps.json for this entry
+            TMP=$(jq \
+              --arg folder "$FOLDER" \
+              --arg url "$SITE_URL" \
+              '.apps = [.apps[] | if .folder == $folder then .url = $url else . end]' \
+              apps.json)
+            echo "$TMP" > apps.json
+            echo "apps.json updated with url for $FOLDER"
+
+          done <<< "${{ steps.find.outputs.folders }}"
+
+      - name: Commit updated apps.json
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add apps.json
+          git diff --staged --quiet && echo "No changes to commit" && exit 0
+          git commit -m "chore: update apps.json with Netlify URLs for new apps [skip ci]"
+          git push origin main
