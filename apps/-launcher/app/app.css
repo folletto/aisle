@@ -1,0 +1,45 @@
+/* COLOR TOKENS */
+:root {
+  --color-bg: #ffffff;
+  --color-blue-deep: #003b4d;
+  --color-blue-mid: #7cadc3;
+  --color-blue-link: #137ba8;
+  --color-text: #003b4d;
+  --color-text-muted: rgba(0, 59, 77, 0.55);
+  --color-border: rgba(124, 173, 195, 0.4);
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+html,
+body {
+  height: 100%;
+}
+
+body {
+  font-family: "Lato", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  background: var(--color-bg);
+  color: var(--color-text);
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+}
+
+a {
+  color: inherit;
+  text-decoration: none;
+}
+
+button {
+  font: inherit;
+  cursor: pointer;
+  border: none;
+  background: none;
+  padding: 0;
+  color: inherit;
+}
