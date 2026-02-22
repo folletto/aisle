@@ -66,55 +66,7 @@ Copy this template for each new app's `netlify.toml`:
     Referrer-Policy = "strict-origin-when-cross-origin"
 ```
 
-### 4. HTML Template
-
-Use this as a starting template for `index.html`:
-
-```html
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="description" content="[App description]">
-    <title>[App Name]</title>
-    <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
-        body {
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
-            padding: 2rem;
-            max-width: 800px;
-            margin: 0 auto;
-        }
-        /* Add app-specific styles here */
-    </style>
-</head>
-<body>
-    <header>
-        <h1>[App Name]</h1>
-        <p>[App description]</p>
-    </header>
-
-    <main>
-        <!-- App content here -->
-    </main>
-
-    <footer style="margin-top: 3rem; padding-top: 1rem; border-top: 1px solid #eee; text-align: center; color: #666; font-size: 0.9rem;">
-        <a href="/">← Back to all apps</a>
-    </footer>
-
-    <script>
-        // App JavaScript here
-    </script>
-</body>
-</html>
-```
-
-### 5. Register the App
+### 4. Register the App
 
 After creating the app files, add an entry to `/apps.json` at the repo root **without a `url` field**:
 
@@ -190,4 +142,3 @@ The landing page is a separate Netlify site with base directory `apps/-launcher`
 - Add helpful comments for complex logic
 - Test the app works before committing
 - Keep the code clean and maintainable
-- Follow the HTML template structure for consistency
