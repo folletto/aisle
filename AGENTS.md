@@ -133,6 +133,24 @@ After creating the app files, add an entry to `/apps.json` at the repo root **wi
 
 The `deploy-netlify-new` GitHub Action will automatically detect the missing `url`, create a Netlify site named `aisle-<folder>` (e.g. `https://aisle-app-name.netlify.app`), and write the URL back to `apps.json`. The landing page will then display the new app.
 
+### apps.json Field Reference
+
+```json
+{
+  "apps": [
+    {
+      "name": "string",          // Display name shown on the launcher
+      "description": "string",   // Short description shown on the launcher
+      "url": "string",           // Deployed Netlify URL (omit to trigger auto-deployment)
+      "folder": "string",        // Folder name under /apps/
+      "tags": ["string"]         // Categories used for filtering on the launcher
+    }
+  ]
+}
+```
+
+Note: the `-launcher` entry in `apps.json` is the only one whose Netlify site was set up manually (it predates the auto-deploy action). All other apps are auto-deployed when added without a `url`.
+
 ## Development Guidelines
 
 ### Self-Contained Apps
