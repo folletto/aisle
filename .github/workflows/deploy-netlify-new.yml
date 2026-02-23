@@ -29,15 +29,13 @@ jobs:
           echo "$UNDEPLOYED" >> $GITHUB_OUTPUT
           echo "EOF" >> $GITHUB_OUTPUT
 
-      - name: Install Netlify CLI
-        if: steps.find.outputs.folders != ''
-        run: npm install -g netlify-cli
-
-      - name: Create and deploy Netlify sites for undeployed apps
+      - name: Create Netlify sites for undeployed apps
         if: steps.find.outputs.folders != ''
         env:
           NETLIFY_AUTH_TOKEN: ${{ secrets.NETLIFY_AUTH_TOKEN }}
           NETLIFY_TEAM_ID: ${{ secrets.NETLIFY_TEAM_ID }}
+          NETLIFY_GITHUB_INSTALLATION_ID: ${{ secrets.NETLIFY_GITHUB_INSTALLATION_ID }}
+          GITHUB_REPO: ${{ github.repository }}
         run: |
           set -euo pipefail
 
@@ -56,11 +54,27 @@ jobs:
             SITE_NAME="aisle-$FOLDER"
             echo "Creating Netlify site: $SITE_NAME"
 
-            # Create the site via REST API (no GitHub repo linking required)
+            # Create the site with full GitHub repo linking.
+            # Netlify reads build settings from the netlify.toml in base_dir,
+            # so cmd/dir here are intentionally omitted.
+            # NETLIFY_GITHUB_INSTALLATION_ID: find at
+            #   github.com/settings/installations/<id>  (personal)
+            #   github.com/organizations/<org>/settings/installations/<id>  (org)
             SITE_RAW=$(curl -s -w "\n%{http_code}" -X POST "https://api.netlify.com/api/v1/sites" \
               -H "Authorization: Bearer $NETLIFY_AUTH_TOKEN" \
               -H "Content-Type: application/json" \
-              -d "{\"name\": \"$SITE_NAME\", \"account_slug\": \"$NETLIFY_TEAM_ID\"}")
+              -d "{
+                \"name\": \"$SITE_NAME\",
+                \"account_slug\": \"$NETLIFY_TEAM_ID\",
+                \"repo\": {
+                  \"provider\": \"github\",
+                  \"repo\": \"$GITHUB_REPO\",
+                  \"private\": false,
+                  \"branch\": \"main\",
+                  \"base_dir\": \"apps/$FOLDER\",
+                  \"installation_id\": $NETLIFY_GITHUB_INSTALLATION_ID
+                }
+              }")
             SITE_HTTP=$(echo "$SITE_RAW" | tail -1)
             SITE_BODY=$(echo "$SITE_RAW" | head -n -1)
 
@@ -84,14 +98,6 @@ jobs:
             fi
 
             echo "Site created: $SITE_URL (id: $SITE_ID)"
-
-            # Deploy the static files to the new site
-            echo "Deploying apps/$FOLDER to site $SITE_ID..."
-            netlify deploy \
-              --dir "apps/$FOLDER" \
-              --site "$SITE_ID" \
-              --prod \
-              --auth "$NETLIFY_AUTH_TOKEN"
 
             # Write the url back into apps.json for this entry
             TMP=$(jq \
