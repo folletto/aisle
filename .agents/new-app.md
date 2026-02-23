@@ -12,7 +12,7 @@
 1. Create a new folder in /apps/ with a descriptive kebab-case name. If the user hasn't explicitly provided this, ask and provide a suggestion based on the request
 2. Include AGENTS.md file and keep it updated with a short explanation of how the app works
 3. Include netlify.toml to configure Netlify as needed
-4. Add an entry to `apps.json` at the repo root1
+4. Add an entry to the `apps.json` at the repo root (follow the same structure)
 
 ## Deployment
 
