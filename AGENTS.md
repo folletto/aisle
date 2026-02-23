@@ -137,6 +137,7 @@ The landing page is a separate Netlify site with base directory `apps/-launcher`
 
 ## Tips for AI Agents
 
+- GitHub commit messages should use the format "{app name}: {change}" when they refer to an app, and "Actions: {message}" when they change the GitHub Actions.
 - Always create fully functional, production-ready apps
 - Include error handling and edge cases
 - Add helpful comments for complex logic
