@@ -32,13 +32,39 @@ jobs:
           NETLIFY_TEAM_ID: ${{ secrets.NETLIFY_TEAM_ID }}
           GITHUB_REPO: ${{ github.repository }}
         run: |
+          set -euo pipefail
+
+          # Helper: pretty-print a response body, falling back to raw if not JSON
+          log_response() {
+            local body="$1"
+            if echo "$body" | jq -e . > /dev/null 2>&1; then
+              echo "$body" | jq .
+            else
+              echo "(non-JSON body) $body"
+            fi
+          }
+
           # Fetch the GitHub App installation ID linked to this Netlify account
-          INSTALL_ID=$(curl -s "https://api.netlify.com/api/v1/github_apps/installations" \
-            -H "Authorization: Bearer $NETLIFY_AUTH_TOKEN" \
-            | jq -r '.[0].github_app_installation_id')
+          echo "Fetching GitHub App installation ID from Netlify..."
+          INSTALL_RAW=$(curl -s -w "\n%{http_code}" \
+            "https://api.netlify.com/api/v1/github_apps/installations" \
+            -H "Authorization: Bearer $NETLIFY_AUTH_TOKEN")
+          INSTALL_HTTP=$(echo "$INSTALL_RAW" | tail -1)
+          INSTALL_BODY=$(echo "$INSTALL_RAW" | head -n -1)
+
+          echo "Netlify installations API — HTTP $INSTALL_HTTP"
+          if ! echo "$INSTALL_BODY" | jq -e . > /dev/null 2>&1; then
+            echo "ERROR: Netlify API returned a non-JSON response (HTTP $INSTALL_HTTP):"
+            echo "$INSTALL_BODY"
+            exit 1
+          fi
+
+          INSTALL_ID=$(echo "$INSTALL_BODY" | jq -r '.[0].github_app_installation_id')
 
           if [ -z "$INSTALL_ID" ] || [ "$INSTALL_ID" = "null" ]; then
             echo "ERROR: Could not retrieve GitHub App installation ID from Netlify account"
+            echo "Response body:"
+            echo "$INSTALL_BODY" | jq .
             exit 1
           fi
           echo "GitHub App installation ID: $INSTALL_ID"
@@ -58,7 +84,7 @@ jobs:
             SITE_NAME="aisle-$FOLDER"
             echo "Creating Netlify site: $SITE_NAME"
 
-            RESPONSE=$(curl -s -X POST "https://api.netlify.com/api/v1/sites" \
+            SITE_RAW=$(curl -s -w "\n%{http_code}" -X POST "https://api.netlify.com/api/v1/sites" \
               -H "Authorization: Bearer $NETLIFY_AUTH_TOKEN" \
               -H "Content-Type: application/json" \
               -d "{
@@ -75,12 +101,15 @@ jobs:
                   \"installation_id\": $INSTALL_ID
                 }
               }")
+            SITE_HTTP=$(echo "$SITE_RAW" | tail -1)
+            RESPONSE=$(echo "$SITE_RAW" | head -n -1)
 
-            SITE_URL=$(echo "$RESPONSE" | jq -r '.ssl_url // empty')
+            echo "Create site API — HTTP $SITE_HTTP"
+            SITE_URL=$(echo "$RESPONSE" | jq -r '.ssl_url // empty' 2>/dev/null || true)
 
             if [ -z "$SITE_URL" ]; then
-              echo "ERROR: Failed to create Netlify site for $FOLDER. API response:"
-              echo "$RESPONSE" | jq .
+              echo "ERROR: Failed to create Netlify site for $FOLDER (HTTP $SITE_HTTP). API response:"
+              log_response "$RESPONSE"
               echo "Skipping — url will remain empty so the next run can retry"
               continue
             fi
