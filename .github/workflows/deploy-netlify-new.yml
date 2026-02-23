@@ -5,6 +5,10 @@ on:
     branches: [main]
     paths:
       - 'apps.json'
+  pull_request:
+    paths:
+      - 'apps.json'
+  workflow_dispatch:
 
 permissions:
   contents: write
@@ -134,4 +138,4 @@ jobs:
           git add apps.json
           git diff --staged --quiet && echo "No changes to commit" && exit 0
           git commit -m "chore: update apps.json with Netlify URLs for new apps [skip ci]"
-          git push origin main
+          git push origin HEAD:${{ github.head_ref || github.ref_name }}
