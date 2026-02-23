@@ -55,8 +55,8 @@ jobs:
             echo "Creating Netlify site: $SITE_NAME"
 
             # Create the site with full GitHub repo linking.
-            # Netlify reads build settings from the netlify.toml in base_dir,
-            # so cmd/dir here are intentionally omitted.
+            # `base` tells Netlify which subdirectory to treat as the project root;
+            # Netlify will read netlify.toml from there and run the build within it.
             # NETLIFY_GITHUB_INSTALLATION_ID: find at
             #   github.com/settings/installations/<id>  (personal)
             #   github.com/organizations/<org>/settings/installations/<id>  (org)
@@ -71,7 +71,7 @@ jobs:
                   \"repo\": \"$GITHUB_REPO\",
                   \"private\": false,
                   \"branch\": \"main\",
-                  \"base_dir\": \"apps/$FOLDER\",
+                  \"base\": \"apps/$FOLDER\",
                   \"installation_id\": $NETLIFY_GITHUB_INSTALLATION_ID
                 }
               }")
@@ -109,6 +109,62 @@ jobs:
             echo "apps.json updated with url for $FOLDER"
 
           done <<< "${{ steps.find.outputs.folders }}"
+
+      - name: Fix base directory for already-deployed sites
+        env:
+          NETLIFY_AUTH_TOKEN: ${{ secrets.NETLIFY_AUTH_TOKEN }}
+        run: |
+          set -euo pipefail
+
+          # Ensure every site that follows the aisle-<folder> naming convention
+          # has its base directory set correctly. This repairs sites that were
+          # created before the base_dir → base fix and catches any future drift.
+          DEPLOYED=$(jq -r '.apps[] | select(.url != null and .url != "") | .folder' apps.json)
+
+          while IFS= read -r FOLDER; do
+            [ -z "$FOLDER" ] && continue
+
+            SITE_NAME="aisle-$FOLDER"
+            EXPECTED_BASE="apps/$FOLDER"
+
+            # Look up the site by name
+            SITES=$(curl -s \
+              "https://api.netlify.com/api/v1/sites?name=$SITE_NAME&filter=all" \
+              -H "Authorization: Bearer $NETLIFY_AUTH_TOKEN")
+
+            SITE_ID=$(echo "$SITES" | jq -r --arg n "$SITE_NAME" \
+              '.[] | select(.name == $n) | .id' | head -1)
+
+            if [ -z "$SITE_ID" ]; then
+              echo "Site $SITE_NAME not found on Netlify — skipping"
+              continue
+            fi
+
+            CURRENT_BASE=$(echo "$SITES" | jq -r --arg n "$SITE_NAME" \
+              '.[] | select(.name == $n) | .build_settings.base // ""' | head -1)
+
+            if [ "$CURRENT_BASE" = "$EXPECTED_BASE" ]; then
+              echo "$SITE_NAME base already correct: $CURRENT_BASE"
+              continue
+            fi
+
+            echo "Fixing $SITE_NAME: base=\"$CURRENT_BASE\" → \"$EXPECTED_BASE\""
+            PATCH_RAW=$(curl -s -w "\n%{http_code}" -X PATCH \
+              "https://api.netlify.com/api/v1/sites/$SITE_ID" \
+              -H "Authorization: Bearer $NETLIFY_AUTH_TOKEN" \
+              -H "Content-Type: application/json" \
+              -d "{\"build_settings\": {\"base\": \"$EXPECTED_BASE\"}}")
+            PATCH_HTTP=$(echo "$PATCH_RAW" | tail -1)
+            PATCH_BODY=$(echo "$PATCH_RAW" | head -n -1)
+
+            if [ "$PATCH_HTTP" = "200" ]; then
+              echo "Fixed $SITE_NAME successfully"
+            else
+              echo "ERROR: Failed to fix $SITE_NAME (HTTP $PATCH_HTTP)"
+              echo "$PATCH_BODY" | jq . || true
+            fi
+
+          done <<< "$DEPLOYED"
 
       - name: Commit updated apps.json
         run: |
