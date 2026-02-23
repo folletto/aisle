@@ -14152,7 +14152,12 @@ const Qd = ["Morning", "Afternoon", "Evening"],
                           className: `w-full py-1.5 px-1 text-xs rounded transition-colors duration-150
                       ${L ? "bg-blue-600 text-white font-semibold" : "bg-gray-200 hover:bg-blue-100 text-gray-700"}
                       focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-opacity-75`,
-                          children: y,
+                          children: vt.jsxs(_.Fragment, {
+                            children: [
+                              vt.jsx("span", { className: "sm:hidden", children: y[0] }),
+                              vt.jsx("span", { className: "hidden sm:inline", children: y }),
+                            ],
+                          }),
                         },
                         y,
                       );
