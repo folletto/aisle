@@ -1,9 +1,6 @@
 [build]
   publish = "build/client"
   command = "npm ci && npm run build"
-  # Only rebuild if this app's directory changed.
-  # Guard against empty $CACHED_COMMIT_REF (no prior deploy): proceed with build.
-  ignore = "[ -n \"$CACHED_COMMIT_REF\" ] || exit 1; git diff --quiet $CACHED_COMMIT_REF $COMMIT_REF ."
 
 [build.environment]
   NODE_VERSION = "22"
