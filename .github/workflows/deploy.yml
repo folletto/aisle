@@ -250,13 +250,7 @@ jobs:
 
             if [ "$DEPLOY_EXIT" -ne 0 ]; then
               echo "  ✗ Deploy failed for $FOLDER (exit $DEPLOY_EXIT):"
-              # Try to extract a structured error from JSON output; fall back to raw
-              JSON_ERR=$(echo "$DEPLOY_OUT" | jq -r '.error // empty' 2>/dev/null || true)
-              if [ -n "$JSON_ERR" ]; then
-                echo "  Error: $JSON_ERR"
-                echo "  Full output:"
-              fi
-              echo "$DEPLOY_OUT" | sed 's/^/    /'
+              echo "$DEPLOY_OUT"
               DEPLOY_TABLE="${DEPLOY_TABLE}\n| \`$FOLDER\` | ❌ Deploy failed |"
               DEPLOY_FAILED=true
               continue
