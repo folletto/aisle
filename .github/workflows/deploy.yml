@@ -151,23 +151,26 @@ jobs:
               SITE_NAME="aisle-$FOLDER"
               echo "  New app — provisioning $SITE_NAME ..."
 
-              SITE_RESP=$(curl -sf -X POST "https://api.netlify.com/api/v1/sites" \
+              HTTP_CODE=$(curl -s -o /tmp/netlify_site_resp.json -w "%{http_code}" \
+                --max-time 30 \
+                -X POST "https://api.netlify.com/api/v1/sites" \
                 -H "Authorization: Bearer $NETLIFY_AUTH_TOKEN" \
                 -H "Content-Type: application/json" \
-                -d "{\"name\":\"$SITE_NAME\",\"account_slug\":\"$NETLIFY_TEAM_ID\"}" \
-                || echo "__ERROR__")
+                -d "{\"name\":\"$SITE_NAME\",\"account_slug\":\"$NETLIFY_TEAM_ID\"}")
+              SITE_RESP=$(cat /tmp/netlify_site_resp.json 2>/dev/null || echo "{}")
 
-              if echo "$SITE_RESP" | grep -q "__ERROR__"; then
-                echo "  ✗ curl failed when provisioning site"
+              if [ -z "$HTTP_CODE" ] || [ "$HTTP_CODE" = "000" ]; then
+                echo "  ✗ curl failed when provisioning site (network/timeout error)"
                 DEPLOY_TABLE="${DEPLOY_TABLE}\n| \`$FOLDER\` | ❌ Provisioning failed |"
                 continue
               fi
 
               # If name is already taken the site was created by deploy-netlify-new.yml —
               # look it up instead.
-              if echo "$SITE_RESP" | jq -e '.errors' > /dev/null 2>&1; then
-                echo "  Site may already exist — looking up by name"
-                EXISTING=$(curl -sf \
+              if [ "$HTTP_CODE" != "201" ] || echo "$SITE_RESP" | jq -e '.errors' > /dev/null 2>&1; then
+                echo "  Provisioning returned HTTP $HTTP_CODE — site may already exist, looking up by name"
+                echo "  Response: $(echo "$SITE_RESP" | jq -c '.' 2>/dev/null || echo "$SITE_RESP")"
+                EXISTING=$(curl -s --max-time 30 \
                   "https://api.netlify.com/api/v1/sites?name=$SITE_NAME&filter=all" \
                   -H "Authorization: Bearer $NETLIFY_AUTH_TOKEN")
                 URL=$(echo "$EXISTING" | jq -r \
