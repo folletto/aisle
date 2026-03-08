@@ -1,0 +1,437 @@
+name: Netlify CI
+
+# This workflow handles both provisioning and deployment of all apps.
+#
+# Two jobs run in sequence:
+#   1. setup  — provisions Netlify containers for apps missing a siteId
+#   2. deploy — builds and deploys changed apps to their Netlify sites
+#
+# Behaviour:
+#   - Push to main  → production deploy of changed apps
+#   - Pull request  → preview deploy + PR comment with preview URLs
+#   - Manual        → specify apps to deploy (comma-separated folder names, or "all")
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'apps/**'
+      - 'apps.json'
+  pull_request:
+    types: [opened, synchronize, reopened]
+    paths:
+      - 'apps/**'
+      - 'apps.json'
+  workflow_dispatch:
+    inputs:
+      apps:
+        description: 'App folder names, comma-separated (empty = auto-detect, "all" = every app)'
+        required: false
+        default: ''
+      production:
+        description: 'Deploy as production (true/false)'
+        required: false
+        default: 'false'
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  # ── 1. Provision missing Netlify containers ─────────────────────────────────
+  setup:
+    name: Setup Netlify Containers
+    runs-on: ubuntu-latest
+    outputs:
+      apps_json_updated: ${{ steps.provision.outputs.apps_json_updated }}
+      created_apps: ${{ steps.provision.outputs.created_apps }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Install Netlify CLI
+        run: npm install -g netlify-cli
+
+      - name: Provision missing Netlify sites
+        id: provision
+        env:
+          NETLIFY_AUTH_TOKEN: ${{ secrets.NETLIFY_AUTH_TOKEN }}
+          NETLIFY_TEAM_ID: ${{ secrets.NETLIFY_TEAM_ID }}
+        run: |
+          set -euo pipefail
+
+          CREATED_APPS=""
+          APPS_JSON_UPDATED=false
+
+          # Find active apps (not deleted) without a siteId
+          MISSING=$(jq -r '
+            .apps[]
+            | select((.siteId == null or .siteId == "") and (.deleted != true))
+            | .folder
+          ' apps.json)
+
+          if [ -z "$MISSING" ]; then
+            echo "All apps have siteId — nothing to provision"
+            echo "apps_json_updated=false" >> "$GITHUB_OUTPUT"
+            echo "created_apps=" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+
+          while IFS= read -r FOLDER; do
+            [ -z "$FOLDER" ] && continue
+
+            # Guard: folder must exist in the repo
+            if [ ! -d "apps/$FOLDER" ]; then
+              echo "WARNING: apps/$FOLDER not found in repository — skipping"
+              continue
+            fi
+
+            APP_NAME=$(jq -r --arg f "$FOLDER" \
+              '.apps[] | select(.folder == $f) | .name' apps.json)
+            SITE_NAME="aisle-${FOLDER}"
+
+            echo ""
+            echo "══════════════════════════════════════════════════════"
+            echo "Provisioning: $APP_NAME ($FOLDER) → $SITE_NAME"
+
+            # Create site using Netlify CLI
+            if SITE_JSON=$(netlify sites:create \
+              --name "$SITE_NAME" \
+              --account-slug "$NETLIFY_TEAM_ID" \
+              --json 2>&1); then
+              SITE_ID=$(echo "$SITE_JSON" | jq -r '.id')
+              SITE_URL=$(echo "$SITE_JSON" | jq -r '.ssl_url')
+            else
+              # Name may already be taken — look up existing site
+              echo "  Create failed — looking up existing site..."
+              LOOKUP=$(curl -sf \
+                "https://api.netlify.com/api/v1/sites/${SITE_NAME}.netlify.app" \
+                -H "Authorization: Bearer $NETLIFY_AUTH_TOKEN" || echo "{}")
+              SITE_ID=$(echo "$LOOKUP" | jq -r '.id // empty')
+              SITE_URL=$(echo "$LOOKUP" | jq -r '.ssl_url // empty')
+            fi
+
+            if [ -z "$SITE_ID" ]; then
+              echo "  ✗ Failed to create or find Netlify site for $FOLDER"
+              continue
+            fi
+
+            echo "  ✓ $SITE_URL (id: $SITE_ID)"
+
+            # Update apps.json with siteId and url
+            TMP=$(jq \
+              --arg f "$FOLDER" \
+              --arg id "$SITE_ID" \
+              --arg url "$SITE_URL" \
+              '.apps = [.apps[] |
+                if .folder == $f then .siteId = $id | .url = $url
+                else . end
+              ]' apps.json)
+            echo "$TMP" > apps.json
+
+            if [ -n "$CREATED_APPS" ]; then
+              CREATED_APPS="${CREATED_APPS}, ${APP_NAME}"
+            else
+              CREATED_APPS="$APP_NAME"
+            fi
+            APPS_JSON_UPDATED=true
+          done <<< "$MISSING"
+
+          echo ""
+          echo "apps_json_updated=$APPS_JSON_UPDATED" >> "$GITHUB_OUTPUT"
+          echo "created_apps=$CREATED_APPS" >> "$GITHUB_OUTPUT"
+
+      - name: Commit provisioned siteIds
+        if: steps.provision.outputs.apps_json_updated == 'true'
+        env:
+          CREATED_APPS: ${{ steps.provision.outputs.created_apps }}
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add apps.json
+          git diff --staged --quiet && { echo "No changes to commit"; exit 0; }
+          git commit -m "Bot: Netlify container created for app ${CREATED_APPS}"
+          git push origin HEAD:${{ github.head_ref || github.ref_name }}
+
+  # ── 2. Build & deploy changed apps ──────────────────────────────────────────
+  deploy:
+    name: Build & Deploy
+    needs: setup
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          # Re-checkout to pick up any commits from the setup job
+          ref: ${{ github.head_ref || github.ref_name }}
+          fetch-depth: 0
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Install Netlify CLI
+        run: npm install -g netlify-cli
+
+      - name: Detect changed apps
+        id: detect
+        run: |
+          set -euo pipefail
+
+          CHANGED_FOLDERS=""
+
+          if [ -n "${{ github.event.inputs.apps }}" ]; then
+            # ── Manual dispatch ──
+            INPUT="${{ github.event.inputs.apps }}"
+            if [ "$INPUT" = "all" ]; then
+              CHANGED_FOLDERS=$(jq -r '.apps[] | select(.deleted != true) | .folder' apps.json)
+            else
+              CHANGED_FOLDERS=$(echo "$INPUT" | tr ',' '\n' | sed 's/^ *//;s/ *$//' | grep -v '^$')
+            fi
+
+          elif [ "${{ github.event_name }}" = "push" ]; then
+            # ── Push to main ──
+            BEFORE="${{ github.event.before }}"
+            if [ "$BEFORE" = "0000000000000000000000000000000000000000" ]; then
+              CHANGED=$(git show --name-only --format='' HEAD)
+            else
+              CHANGED=$(git diff --name-only "$BEFORE" "${{ github.sha }}")
+            fi
+
+            # App folders with changed files
+            CHANGED_FOLDERS=$(echo "$CHANGED" \
+              | grep '^apps/' | cut -d'/' -f2 | grep -v '^$' | sort -u || true)
+
+            # If apps.json changed, find which specific app entries differ
+            if echo "$CHANGED" | grep -q '^apps\.json$'; then
+              OLD_JSON=$(git show "${BEFORE}:apps.json" 2>/dev/null || echo '{"apps":[]}')
+              for FOLDER in $(jq -r '.apps[].folder' apps.json); do
+                OLD_ENTRY=$(echo "$OLD_JSON" | jq -c --arg f "$FOLDER" \
+                  '[.apps[] | select(.folder == $f)]' 2>/dev/null || echo "[]")
+                NEW_ENTRY=$(jq -c --arg f "$FOLDER" \
+                  '[.apps[] | select(.folder == $f)]' apps.json)
+                if [ "$OLD_ENTRY" != "$NEW_ENTRY" ]; then
+                  CHANGED_FOLDERS=$(printf '%s\n%s' "$CHANGED_FOLDERS" "$FOLDER")
+                fi
+              done
+            fi
+
+          else
+            # ── Pull request ──
+            BASE_REF="${{ github.base_ref }}"
+            git fetch origin "$BASE_REF" --depth=1
+            CHANGED=$(git diff --name-only "origin/${BASE_REF}...HEAD")
+
+            # App folders with changed files
+            CHANGED_FOLDERS=$(echo "$CHANGED" \
+              | grep '^apps/' | cut -d'/' -f2 | grep -v '^$' | sort -u || true)
+
+            # If apps.json changed, find which specific app entries differ
+            if echo "$CHANGED" | grep -q '^apps\.json$'; then
+              OLD_JSON=$(git show "origin/${BASE_REF}:apps.json" 2>/dev/null || echo '{"apps":[]}')
+              for FOLDER in $(jq -r '.apps[].folder' apps.json); do
+                OLD_ENTRY=$(echo "$OLD_JSON" | jq -c --arg f "$FOLDER" \
+                  '[.apps[] | select(.folder == $f)]' 2>/dev/null || echo "[]")
+                NEW_ENTRY=$(jq -c --arg f "$FOLDER" \
+                  '[.apps[] | select(.folder == $f)]' apps.json)
+                if [ "$OLD_ENTRY" != "$NEW_ENTRY" ]; then
+                  CHANGED_FOLDERS=$(printf '%s\n%s' "$CHANGED_FOLDERS" "$FOLDER")
+                fi
+              done
+            fi
+          fi
+
+          # Deduplicate and convert to JSON array
+          APPS=$(echo "$CHANGED_FOLDERS" | grep -v '^$' | sort -u | jq -R . | jq -s -c . || echo "[]")
+          [ -z "$APPS" ] || [ "$APPS" = "null" ] && APPS="[]"
+
+          echo "Changed apps: $APPS"
+          echo "apps=$APPS" >> "$GITHUB_OUTPUT"
+
+      - name: Build & deploy each app
+        id: deploy
+        if: steps.detect.outputs.apps != '[]'
+        env:
+          NETLIFY_AUTH_TOKEN: ${{ secrets.NETLIFY_AUTH_TOKEN }}
+          IS_PROD: >-
+            ${{
+              (github.ref == 'refs/heads/main' && github.event_name == 'push')
+              || github.event.inputs.production == 'true'
+            }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+          COMMIT_SHA: ${{ github.sha }}
+          APPS: ${{ steps.detect.outputs.apps }}
+        run: |
+          set -euo pipefail
+
+          DEPLOY_ROWS=""
+          DEPLOY_FAILED=false
+
+          for FOLDER in $(echo "$APPS" | jq -r '.[]'); do
+            echo ""
+            echo "══════════════════════════════════════════════════════"
+            echo "App: $FOLDER"
+
+            APP_DIR="apps/$FOLDER"
+            if [ ! -d "$APP_DIR" ]; then
+              echo "  SKIP: $APP_DIR not found in repository"
+              continue
+            fi
+
+            # Look up siteId from apps.json
+            SITE_ID=$(jq -r --arg f "$FOLDER" \
+              '.apps[] | select(.folder == $f) | .siteId // ""' apps.json)
+
+            if [ -z "$SITE_ID" ] || [ "$SITE_ID" = "null" ]; then
+              echo "  SKIP: No siteId in apps.json — run setup first"
+              DEPLOY_ROWS="${DEPLOY_ROWS}\n| \`$FOLDER\` | ⚠️ No siteId — not deployed |"
+              continue
+            fi
+
+            # Check if app is marked as deleted
+            IS_DELETED=$(jq -r --arg f "$FOLDER" \
+              '.apps[] | select(.folder == $f) | .deleted // false' apps.json)
+            if [ "$IS_DELETED" = "true" ]; then
+              echo "  SKIP: App is marked as deleted"
+              continue
+            fi
+
+            # ── Parse netlify.toml for build config ──
+            TOML="$APP_DIR/netlify.toml"
+            PUBLISH_DIR="."
+            BUILD_CMD=""
+
+            if [ -f "$TOML" ]; then
+              PUB=$(sed -n '/^\[build\]/,/^\[/{s/^[[:space:]]*publish[[:space:]]*=[[:space:]]*"\([^"]*\)"/\1/p}' \
+                "$TOML" | head -1)
+              [ -n "$PUB" ] && PUBLISH_DIR="$PUB"
+
+              CMD=$(sed -n '/^\[build\]/,/^\[/{s/^[[:space:]]*command[[:space:]]*=[[:space:]]*"\([^"]*\)"/\1/p}' \
+                "$TOML" | head -1)
+              # Ignore the static-site no-op placeholder
+              if [ -n "$CMD" ] && [[ ! "$CMD" == echo* ]]; then
+                BUILD_CMD="$CMD"
+              fi
+            fi
+
+            echo "  Publish: $PUBLISH_DIR  |  Build: ${BUILD_CMD:-(none)}"
+
+            # ── Build ──
+            if [ -n "$BUILD_CMD" ]; then
+              echo "  Building..."
+              if ! (cd "$APP_DIR" && eval "$BUILD_CMD"); then
+                echo "  ✗ Build failed for $FOLDER"
+                DEPLOY_ROWS="${DEPLOY_ROWS}\n| \`$FOLDER\` | ❌ Build failed |"
+                DEPLOY_FAILED=true
+                continue
+              fi
+            fi
+
+            # ── Deploy ──
+            if [ "$PUBLISH_DIR" = "." ]; then
+              DEPLOY_DIR="$APP_DIR"
+            else
+              DEPLOY_DIR="$APP_DIR/$PUBLISH_DIR"
+            fi
+
+            SHORT_SHA="${COMMIT_SHA:0:7}"
+            if [ "$IS_PROD" = "true" ]; then
+              DEPLOY_MSG="Production deploy ${SHORT_SHA}"
+            else
+              DEPLOY_MSG="Preview PR #${PR_NUMBER:-manual} @ ${SHORT_SHA}"
+            fi
+
+            DEPLOY_FLAGS="--dir=$DEPLOY_DIR --site=$SITE_ID --message=$DEPLOY_MSG --json"
+            [ "$IS_PROD" = "true" ] && DEPLOY_FLAGS="$DEPLOY_FLAGS --prod"
+
+            echo "  Deploying (prod=$IS_PROD)..."
+            if ! DEPLOY_OUT=$(netlify deploy $DEPLOY_FLAGS 2>&1); then
+              echo "  ✗ Deploy failed for $FOLDER:"
+              echo "$DEPLOY_OUT"
+              DEPLOY_ROWS="${DEPLOY_ROWS}\n| \`$FOLDER\` | ❌ Deploy failed |"
+              DEPLOY_FAILED=true
+              continue
+            fi
+
+            # Extract the deployed URL
+            if [ "$IS_PROD" = "true" ]; then
+              DEPLOY_URL=$(echo "$DEPLOY_OUT" | jq -r '.url // .ssl_url // empty' 2>/dev/null || true)
+            else
+              DEPLOY_URL=$(echo "$DEPLOY_OUT" | jq -r '.deploy_url // empty' 2>/dev/null || true)
+            fi
+
+            if [ -n "$DEPLOY_URL" ]; then
+              echo "  ✓ $DEPLOY_URL"
+              DEPLOY_ROWS="${DEPLOY_ROWS}\n| \`$FOLDER\` | $DEPLOY_URL |"
+            else
+              echo "  ✗ No URL returned"
+              echo "$DEPLOY_OUT"
+              DEPLOY_ROWS="${DEPLOY_ROWS}\n| \`$FOLDER\` | ❌ Deploy failed |"
+              DEPLOY_FAILED=true
+            fi
+          done
+
+          echo ""
+          echo "══════════════════════════════════════════════════════"
+
+          # Expose outputs for the PR comment step
+          {
+            echo "deploy_rows<<EOF"
+            printf "%b" "$DEPLOY_ROWS"
+            echo ""
+            echo "EOF"
+          } >> "$GITHUB_OUTPUT"
+
+          if [ "$DEPLOY_FAILED" = "true" ]; then
+            echo "One or more apps failed — see above"
+            exit 1
+          fi
+
+      # ── Post / update a PR comment with preview URLs ────────────────────────
+      - name: Post preview URLs on PR
+        if: github.event_name == 'pull_request' && steps.deploy.outputs.deploy_rows != ''
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const rows = `${{ steps.deploy.outputs.deploy_rows }}`.trim();
+            if (!rows) return;
+
+            const sha = '${{ github.sha }}'.substring(0, 7);
+            const runUrl = `https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}`;
+            const body = [
+              '## Netlify Deploy Preview',
+              '',
+              '| App | Preview URL |',
+              '|-----|-------------|',
+              rows,
+              '',
+              `*Commit \`${sha}\` · [Workflow run](${runUrl})*`,
+            ].join('\n');
+
+            const { data: comments } = await github.rest.issues.listComments({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: context.issue.number,
+            });
+
+            // Find an existing bot comment to update (avoids comment spam)
+            const marker = '## Netlify Deploy Preview';
+            const existing = comments.find(c =>
+              c.user.type === 'Bot' && c.body.includes(marker)
+            );
+
+            if (existing) {
+              await github.rest.issues.updateComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                comment_id: existing.id,
+                body,
+              });
+            } else {
+              await github.rest.issues.createComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: context.issue.number,
+                body,
+              });
+            }

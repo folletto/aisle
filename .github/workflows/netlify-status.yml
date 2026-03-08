@@ -1,0 +1,175 @@
+name: "🕹️ Netlify Deployment Status"
+
+# Manual audit of all apps and their Netlify deployment status.
+#
+# Categorises each app entry in apps.json into one of four states:
+#   ✅ Deployed    — folder exists in repo AND Netlify container is reachable
+#   ⚠️ Unlinked    — folder exists in repo BUT no Netlify container (missing siteId or site unreachable)
+#   🗑️ Orphaned    — marked as deleted in apps.json BUT Netlify container still exists (clean up needed)
+#   🏁 Cleaned up  — marked as deleted in apps.json AND no Netlify container (fully removed)
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  status:
+    name: Audit Deployment Status
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install Netlify CLI
+        run: npm install -g netlify-cli
+
+      - name: Audit all apps
+        env:
+          NETLIFY_AUTH_TOKEN: ${{ secrets.NETLIFY_AUTH_TOKEN }}
+        run: |
+          set -euo pipefail
+
+          # Counters
+          DEPLOYED=0
+          UNLINKED=0
+          ORPHANED=0
+          CLEANED=0
+
+          # Result tables
+          TABLE_DEPLOYED=""
+          TABLE_UNLINKED=""
+          TABLE_ORPHANED=""
+          TABLE_CLEANED=""
+
+          TOTAL=$(jq '.apps | length' apps.json)
+
+          for i in $(seq 0 $(( TOTAL - 1 ))); do
+            FOLDER=$(jq -r ".apps[$i].folder" apps.json)
+            NAME=$(jq -r ".apps[$i].name" apps.json)
+            SITE_ID=$(jq -r ".apps[$i].siteId // empty" apps.json)
+            URL=$(jq -r ".apps[$i].url // empty" apps.json)
+            IS_DELETED=$(jq -r ".apps[$i].deleted // false" apps.json)
+
+            echo ""
+            echo "──────────────────────────────────────"
+            echo "App: $NAME ($FOLDER)"
+            echo "  siteId: ${SITE_ID:-(none)}"
+            echo "  deleted: $IS_DELETED"
+
+            # Check if folder exists in repo
+            FOLDER_EXISTS=false
+            [ -d "apps/$FOLDER" ] && FOLDER_EXISTS=true
+            echo "  folder exists: $FOLDER_EXISTS"
+
+            # Check if Netlify site is reachable (only if siteId is present)
+            SITE_REACHABLE=false
+            SITE_DETAIL=""
+            if [ -n "$SITE_ID" ]; then
+              if SITE_RESP=$(netlify api getSite --data "{\"site_id\": \"$SITE_ID\"}" 2>/dev/null); then
+                SITE_REACHABLE=true
+                SITE_NAME=$(echo "$SITE_RESP" | jq -r '.name // empty')
+                SITE_URL=$(echo "$SITE_RESP" | jq -r '.ssl_url // empty')
+                SITE_DETAIL="$SITE_URL"
+                echo "  netlify site: ✓ reachable ($SITE_URL)"
+              else
+                echo "  netlify site: ✗ unreachable (siteId exists but site not found)"
+              fi
+            else
+              echo "  netlify site: — (no siteId)"
+            fi
+
+            # Categorise
+            if [ "$IS_DELETED" = "true" ] || [ "$FOLDER_EXISTS" = "false" ]; then
+              # App is considered "not in repo" (deleted or folder removed)
+              if [ "$SITE_REACHABLE" = "true" ]; then
+                echo "  → 🗑️ ORPHANED — marked for deletion but Netlify container still exists"
+                TABLE_ORPHANED="${TABLE_ORPHANED}| \`$FOLDER\` | $NAME | siteId: \`$SITE_ID\` | $SITE_DETAIL |\n"
+                ORPHANED=$((ORPHANED + 1))
+              else
+                REASON="deleted flag set"
+                [ "$FOLDER_EXISTS" = "false" ] && REASON="folder missing"
+                [ -n "$SITE_ID" ] && REASON="$REASON, siteId present but unreachable"
+                echo "  → 🏁 CLEANED UP — no repo folder, no Netlify container"
+                TABLE_CLEANED="${TABLE_CLEANED}| \`$FOLDER\` | $NAME | $REASON |\n"
+                CLEANED=$((CLEANED + 1))
+              fi
+            else
+              # App exists in repo
+              if [ "$SITE_REACHABLE" = "true" ]; then
+                echo "  → ✅ DEPLOYED"
+                TABLE_DEPLOYED="${TABLE_DEPLOYED}| \`$FOLDER\` | $NAME | $SITE_DETAIL |\n"
+                DEPLOYED=$((DEPLOYED + 1))
+              else
+                REASON="no siteId"
+                [ -n "$SITE_ID" ] && REASON="siteId \`$SITE_ID\` present but site unreachable"
+                echo "  → ⚠️ UNLINKED — exists in repo but no Netlify container"
+                TABLE_UNLINKED="${TABLE_UNLINKED}| \`$FOLDER\` | $NAME | $REASON |\n"
+                UNLINKED=$((UNLINKED + 1))
+              fi
+            fi
+          done
+
+          echo ""
+          echo "════════════════════════════════════════════════════════"
+          echo "SUMMARY: $DEPLOYED deployed, $UNLINKED unlinked, $ORPHANED orphaned, $CLEANED cleaned up"
+          echo "════════════════════════════════════════════════════════"
+
+          # Write GitHub Actions step summary
+          {
+            echo "# 🕹️ Netlify Deployment Status"
+            echo ""
+            echo "## Summary"
+            echo ""
+            echo "| Status | Count |"
+            echo "|--------|-------|"
+            echo "| ✅ Deployed | $DEPLOYED |"
+            echo "| ⚠️ Unlinked | $UNLINKED |"
+            echo "| 🗑️ Orphaned | $ORPHANED |"
+            echo "| 🏁 Cleaned up | $CLEANED |"
+            echo ""
+
+            if [ -n "$TABLE_DEPLOYED" ]; then
+              echo "## ✅ Deployed"
+              echo ""
+              echo "Apps that exist in the repo and have a working Netlify container."
+              echo ""
+              echo "| Folder | Name | URL |"
+              echo "|--------|------|-----|"
+              printf "%b" "$TABLE_DEPLOYED"
+              echo ""
+            fi
+
+            if [ -n "$TABLE_UNLINKED" ]; then
+              echo "## ⚠️ Unlinked"
+              echo ""
+              echo "Apps that exist in the repo but do **not** have a working Netlify container."
+              echo ""
+              echo "| Folder | Name | Issue |"
+              echo "|--------|------|-------|"
+              printf "%b" "$TABLE_UNLINKED"
+              echo ""
+            fi
+
+            if [ -n "$TABLE_ORPHANED" ]; then
+              echo "## 🗑️ Orphaned"
+              echo ""
+              echo "Apps marked as deleted in apps.json that **still** have a Netlify container (should be cleaned up)."
+              echo ""
+              echo "| Folder | Name | Site ID | URL |"
+              echo "|--------|------|---------|-----|"
+              printf "%b" "$TABLE_ORPHANED"
+              echo ""
+            fi
+
+            if [ -n "$TABLE_CLEANED" ]; then
+              echo "## 🏁 Cleaned Up"
+              echo ""
+              echo "Apps marked as deleted with no Netlify container remaining. No action needed."
+              echo ""
+              echo "| Folder | Name | Notes |"
+              echo "|--------|------|-------|"
+              printf "%b" "$TABLE_CLEANED"
+              echo ""
+            fi
+          } >> "$GITHUB_STEP_SUMMARY"
