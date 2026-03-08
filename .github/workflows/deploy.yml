@@ -290,7 +290,7 @@ jobs:
 
       # ── Commit apps.json if new sites were provisioned ─────────────────────
       - name: Commit updated apps.json
-        if: steps.deploy.outputs.apps_json_updated == 'true'
+        if: steps.deploy.outputs.apps_json_updated == 'true' && !cancelled()
         run: |
           BRANCH="${{ github.head_ref || github.ref_name }}"
           git config user.name "github-actions[bot]"
