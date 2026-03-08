@@ -289,12 +289,21 @@ jobs:
       - name: Commit updated apps.json
         if: steps.deploy.outputs.apps_json_updated == 'true'
         run: |
+          BRANCH="${{ github.head_ref || github.ref_name }}"
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
+          # Save the updated apps.json (deploy step modified it in detached HEAD)
+          cp apps.json /tmp/apps.json.updated
+          # Get onto the actual branch tip (handles detached HEAD on PRs)
+          git fetch origin "$BRANCH"
+          git checkout "$BRANCH"
+          git pull --ff-only origin "$BRANCH"
+          # Re-apply the provisioned URLs
+          cp /tmp/apps.json.updated apps.json
           git add apps.json
           git diff --staged --quiet && echo "No changes to commit" && exit 0
           git commit -m "Bot: update apps.json with Netlify URLs for new apps [skip ci]"
-          git push origin HEAD:${{ github.head_ref || github.ref_name }}
+          git push origin "$BRANCH"
 
       # ── Post / update a single PR comment with all preview URLs ────────────
       - name: Post preview URLs on PR
