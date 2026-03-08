@@ -25,7 +25,7 @@ mini-apps/
 
 ## How to
 
-* Create a new app: @.agents/new-app.md
+* Create a new app: [new-app.md](.agents/new-app.md)
 
 
 ## Tips for AI Agents
