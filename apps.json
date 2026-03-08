@@ -3,8 +3,9 @@
     {
       "name": "Aisle",
       "description": "The main launcher listing all apps",
-      "url": "https://the-aisle.netlify.app",
       "folder": "-launcher",
+      "url": "https://the-aisle.netlify.app",
+      "siteId": "b56375e5-bfe0-45e1-bac3-aa20018d8f49",
       "tags": [
         "meta"
       ]
@@ -12,8 +13,9 @@
     {
       "name": "Date Picker Calendar",
       "description": "Pick dates on a calendar and share them easily",
-      "url": "https://aisle-cal-pick-to-share.netlify.app",
       "folder": "cal-pick-to-share",
+      "url": "https://aisle-cal-pick-to-share.netlify.app",
+      "siteId": 12e9b5da-4d8e-48d0-9af0-b7eaff27afca"",
       "tags": [
         "calendar"
       ]
@@ -21,8 +23,9 @@
     {
       "name": "TikTok Quick Embed",
       "description": "Quickly embed TikTok videos on a clean page",
-      "url": "https://tiktok-embed.netlify.app",
       "folder": "tiktok-quick-embed",
+      "url": "https://tiktok-embed.netlify.app",
+      "siteId": "251dadff-4d1e-4f34-89ab-0bcc41d61f98",
       "tags": [
         "social"
       ]
@@ -31,11 +34,12 @@
       "name": "TFL Line Status",
       "description": "Live service status for London Underground, Overground, Elizabeth line, DLR and Tram",
       "folder": "tfl-status",
+      "url": "https://aisle-tfl-status.netlify.app",
+      "siteId": "dec10e6f-a5de-4bbe-bb63-837ce2193534",
       "tags": [
         "transport",
         "london"
-      ],
-      "url": "https://aisle-tfl-status.netlify.app"
+      ]
     }
   ]
 }
