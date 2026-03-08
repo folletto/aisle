@@ -1,4 +1,8 @@
-name: Deploy New Netlify App
+name: Provision New Netlify Sites
+
+# Watches for new entries in apps.json (no url field) and creates a bare
+# Netlify site for each one.  No GitHub repo link is set, so the Netlify Bot
+# will never auto-deploy — all deployments go through deploy.yml instead.
 
 on:
   push:
@@ -14,7 +18,7 @@ permissions:
   contents: write
 
 jobs:
-  deploy-new-apps:
+  provision:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -34,8 +38,6 @@ jobs:
         env:
           NETLIFY_AUTH_TOKEN: ${{ secrets.NETLIFY_AUTH_TOKEN }}
           NETLIFY_TEAM_ID: ${{ secrets.NETLIFY_TEAM_ID }}
-          NETLIFY_GITHUB_INSTALLATION_ID: ${{ secrets.NETLIFY_GITHUB_INSTALLATION_ID }}
-          GITHUB_REPO: ${{ github.repository }}
         run: |
           set -euo pipefail
 
@@ -52,28 +54,16 @@ jobs:
             fi
 
             SITE_NAME="aisle-$FOLDER"
-            echo "Creating Netlify site: $SITE_NAME"
+            echo "Creating bare Netlify site (no GitHub link): $SITE_NAME"
 
-            # Create the site with full GitHub repo linking.
-            # `base` tells Netlify which subdirectory to treat as the project root;
-            # Netlify will read netlify.toml from there and run the build within it.
-            # NETLIFY_GITHUB_INSTALLATION_ID: find at
-            #   github.com/settings/installations/<id>  (personal)
-            #   github.com/organizations/<org>/settings/installations/<id>  (org)
+            # No "repo" block → Netlify Bot will not watch this repo.
+            # Deployments are triggered exclusively by deploy.yml.
             SITE_RAW=$(curl -s -w "\n%{http_code}" -X POST "https://api.netlify.com/api/v1/sites" \
               -H "Authorization: Bearer $NETLIFY_AUTH_TOKEN" \
               -H "Content-Type: application/json" \
               -d "{
                 \"name\": \"$SITE_NAME\",
-                \"account_slug\": \"$NETLIFY_TEAM_ID\",
-                \"repo\": {
-                  \"provider\": \"github\",
-                  \"repo\": \"$GITHUB_REPO\",
-                  \"private\": false,
-                  \"branch\": \"main\",
-                  \"base\": \"apps/$FOLDER\",
-                  \"installation_id\": $NETLIFY_GITHUB_INSTALLATION_ID
-                }
+                \"account_slug\": \"$NETLIFY_TEAM_ID\"
               }")
             SITE_HTTP=$(echo "$SITE_RAW" | tail -1)
             SITE_BODY=$(echo "$SITE_RAW" | head -n -1)
@@ -99,7 +89,7 @@ jobs:
 
             echo "Site created: $SITE_URL (id: $SITE_ID)"
 
-            # Write the url back into apps.json for this entry
+            # Write the url back into apps.json
             TMP=$(jq \
               --arg folder "$FOLDER" \
               --arg url "$SITE_URL" \
@@ -110,67 +100,11 @@ jobs:
 
           done <<< "${{ steps.find.outputs.folders }}"
 
-      - name: Fix base directory for already-deployed sites
-        env:
-          NETLIFY_AUTH_TOKEN: ${{ secrets.NETLIFY_AUTH_TOKEN }}
-        run: |
-          set -euo pipefail
-
-          # Ensure every site that follows the aisle-<folder> naming convention
-          # has its base directory set correctly. This repairs sites that were
-          # created before the base_dir → base fix and catches any future drift.
-          DEPLOYED=$(jq -r '.apps[] | select(.url != null and .url != "") | .folder' apps.json)
-
-          while IFS= read -r FOLDER; do
-            [ -z "$FOLDER" ] && continue
-
-            SITE_NAME="aisle-$FOLDER"
-            EXPECTED_BASE="apps/$FOLDER"
-
-            # Look up the site by name
-            SITES=$(curl -s \
-              "https://api.netlify.com/api/v1/sites?name=$SITE_NAME&filter=all" \
-              -H "Authorization: Bearer $NETLIFY_AUTH_TOKEN")
-
-            SITE_ID=$(echo "$SITES" | jq -r --arg n "$SITE_NAME" \
-              '.[] | select(.name == $n) | .id' | head -1)
-
-            if [ -z "$SITE_ID" ]; then
-              echo "Site $SITE_NAME not found on Netlify — skipping"
-              continue
-            fi
-
-            CURRENT_BASE=$(echo "$SITES" | jq -r --arg n "$SITE_NAME" \
-              '.[] | select(.name == $n) | .build_settings.base // ""' | head -1)
-
-            if [ "$CURRENT_BASE" = "$EXPECTED_BASE" ]; then
-              echo "$SITE_NAME base already correct: $CURRENT_BASE"
-              continue
-            fi
-
-            echo "Fixing $SITE_NAME: base=\"$CURRENT_BASE\" → \"$EXPECTED_BASE\""
-            PATCH_RAW=$(curl -s -w "\n%{http_code}" -X PATCH \
-              "https://api.netlify.com/api/v1/sites/$SITE_ID" \
-              -H "Authorization: Bearer $NETLIFY_AUTH_TOKEN" \
-              -H "Content-Type: application/json" \
-              -d "{\"build_settings\": {\"base\": \"$EXPECTED_BASE\"}}")
-            PATCH_HTTP=$(echo "$PATCH_RAW" | tail -1)
-            PATCH_BODY=$(echo "$PATCH_RAW" | head -n -1)
-
-            if [ "$PATCH_HTTP" = "200" ]; then
-              echo "Fixed $SITE_NAME successfully"
-            else
-              echo "ERROR: Failed to fix $SITE_NAME (HTTP $PATCH_HTTP)"
-              echo "$PATCH_BODY" | jq . || true
-            fi
-
-          done <<< "$DEPLOYED"
-
       - name: Commit updated apps.json
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
           git add apps.json
           git diff --staged --quiet && echo "No changes to commit" && exit 0
-          git commit -m "chore: update apps.json with Netlify URLs for new apps [skip ci]"
+          git commit -m "Actions: update apps.json with Netlify URLs for new apps [skip ci]"
           git push origin HEAD:${{ github.head_ref || github.ref_name }}
