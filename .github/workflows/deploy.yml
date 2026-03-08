@@ -103,9 +103,6 @@ jobs:
         with:
           node-version: '22'
 
-      - name: Install Netlify CLI
-        run: npm install -g netlify-cli
-
       - name: Build & deploy changed apps
         id: deploy
         env:
@@ -194,6 +191,18 @@ jobs:
               echo "  Provisioned: $URL"
             fi
 
+            # ── Resolve site ID (UUID required by deploy API) ─────────────────
+            SITE_ID=$(curl -s --max-time 30 \
+              "https://api.netlify.com/api/v1/sites?name=$SITE_NAME&filter=all" \
+              -H "Authorization: Bearer $NETLIFY_AUTH_TOKEN" | \
+              jq -r --arg n "$SITE_NAME" '.[] | select(.name == $n) | .id' | head -1)
+            if [ -z "$SITE_ID" ]; then
+              echo "  ✗ Could not resolve site ID for $SITE_NAME"
+              DEPLOY_TABLE="${DEPLOY_TABLE}\n| \`$FOLDER\` | ❌ Deploy failed |"
+              DEPLOY_FAILED=true
+              continue
+            fi
+
             # ── b. Parse netlify.toml ─────────────────────────────────────────
             TOML="$APP_DIR/netlify.toml"
             PUBLISH_DIR="."
@@ -223,7 +232,7 @@ jobs:
               fi
             fi
 
-            # ── d. Deploy ────────────────────────────────────────────────────
+            # ── d. Deploy via Netlify API (zip upload) ───────────────────────
             SHORT_SHA="${COMMIT_SHA:0:7}"
             if [ "$IS_PROD" = "true" ]; then
               DEPLOY_MSG="Production deploy $SHORT_SHA"
@@ -231,44 +240,63 @@ jobs:
               DEPLOY_MSG="Preview PR #${PR_NUMBER:-manual} @ $SHORT_SHA"
             fi
 
-            DEPLOY_ARGS=(
-              "--auth=$NETLIFY_AUTH_TOKEN"
-              "--dir=$PUBLISH_DIR"
-              "--site=$SITE_NAME"
-              "--message=$DEPLOY_MSG"
-              "--json"
-            )
-            [ "$IS_PROD" = "true" ] && DEPLOY_ARGS+=("--prod")
+            # For build apps (publish != "."), copy netlify.toml into the publish
+            # directory so Netlify picks up headers/redirects from the zip root.
+            if [ "$PUBLISH_DIR" != "." ] && [ -f "$APP_DIR/netlify.toml" ]; then
+              cp "$APP_DIR/netlify.toml" "$APP_DIR/$PUBLISH_DIR/netlify.toml"
+            fi
 
-            # Run from inside the app directory so the CLI resolves netlify.toml
-            # paths correctly and doesn't trigger an unintended build step.
+            # Zip the publish directory — Netlify reads netlify.toml from the zip root.
+            DEPLOY_ZIP="/tmp/deploy-${FOLDER}.zip"
+            rm -f "$DEPLOY_ZIP"
+            (cd "$APP_DIR/$PUBLISH_DIR" && zip -r "$DEPLOY_ZIP" . \
+              -x "*.git*" -x ".git*" -x "node_modules/*" -x ".netlify/*" > /dev/null)
+
             echo "  Deploying (prod=$IS_PROD)..."
-            echo "  Site: $SITE_NAME  |  Dir: $PUBLISH_DIR (from $APP_DIR)"
-            DEPLOY_OUT=""
-            DEPLOY_EXIT=0
-            DEPLOY_OUT=$(cd "$APP_DIR" && netlify deploy "${DEPLOY_ARGS[@]}" 2>&1) || DEPLOY_EXIT=$?
+
+            # Preview → draft deploy (unique URL, live site unchanged)
+            # Production → live deploy (updates main site URL)
+            if [ "$IS_PROD" = "true" ]; then
+              DEPLOY_ENDPOINT="https://api.netlify.com/api/v1/sites/$SITE_ID/deploys"
+            else
+              DEPLOY_ENDPOINT="https://api.netlify.com/api/v1/sites/$SITE_ID/deploys?draft=true"
+            fi
+
+            DEPLOY_RESP=$(curl -s --max-time 300 -X POST "$DEPLOY_ENDPOINT" \
+              -H "Authorization: Bearer $NETLIFY_AUTH_TOKEN" \
+              -H "Content-Type: application/zip" \
+              --data-binary @"$DEPLOY_ZIP")
+            DEPLOY_EXIT=$?
 
             if [ "$DEPLOY_EXIT" -ne 0 ]; then
-              echo "  ✗ Deploy failed for $FOLDER (exit $DEPLOY_EXIT):"
-              echo "$DEPLOY_OUT"
+              echo "  ✗ curl failed (exit $DEPLOY_EXIT)"
               DEPLOY_TABLE="${DEPLOY_TABLE}\n| \`$FOLDER\` | ❌ Deploy failed |"
               DEPLOY_FAILED=true
               continue
             fi
 
-            # Production → main URL; preview → unique deploy URL
+            DEPLOY_ID=$(echo "$DEPLOY_RESP" | jq -r '.id // empty' 2>/dev/null || true)
+            if [ -z "$DEPLOY_ID" ]; then
+              echo "  ✗ Deploy API error:"
+              echo "$DEPLOY_RESP"
+              DEPLOY_TABLE="${DEPLOY_TABLE}\n| \`$FOLDER\` | ❌ Deploy failed |"
+              DEPLOY_FAILED=true
+              continue
+            fi
+
+            # Production → main site URL; preview → unique per-deploy URL
             if [ "$IS_PROD" = "true" ]; then
-              DEPLOY_URL=$(echo "$DEPLOY_OUT" | jq -r '.url // empty' 2>/dev/null || true)
+              DEPLOY_URL=$(echo "$DEPLOY_RESP" | jq -r '.ssl_url // .url // empty' 2>/dev/null || true)
             else
-              DEPLOY_URL=$(echo "$DEPLOY_OUT" | jq -r '.deploy_url // empty' 2>/dev/null || true)
+              DEPLOY_URL=$(echo "$DEPLOY_RESP" | jq -r '.deploy_ssl_url // .deploy_url // empty' 2>/dev/null || true)
             fi
 
             if [ -n "$DEPLOY_URL" ]; then
               echo "  ✓ $DEPLOY_URL"
               DEPLOY_TABLE="${DEPLOY_TABLE}\n| \`$FOLDER\` | $DEPLOY_URL |"
             else
-              echo "  ✗ No URL returned — deploy may have failed"
-              echo "$DEPLOY_OUT"
+              echo "  ✗ No URL returned:"
+              echo "$DEPLOY_RESP" | jq -c '.'
               DEPLOY_TABLE="${DEPLOY_TABLE}\n| \`$FOLDER\` | ❌ Deploy failed |"
               DEPLOY_FAILED=true
             fi
