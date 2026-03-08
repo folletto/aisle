@@ -28,6 +28,7 @@ jobs:
       - name: Find undeployed apps
         id: find
         run: |
+          set -euo pipefail
           UNDEPLOYED=$(jq -r '.apps[] | select(.url == null or .url == "") | .folder' apps.json)
           echo "folders<<EOF" >> $GITHUB_OUTPUT
           echo "$UNDEPLOYED" >> $GITHUB_OUTPUT

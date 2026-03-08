@@ -25,6 +25,7 @@ jobs:
           set -euo pipefail
 
           URLS=$(jq -r '.apps[] | select(.url != null and .url != "") | .url' apps.json)
+          DISABLE_FAILED=false
 
           while IFS= read -r URL; do
             [ -z "$URL" ] && continue
@@ -61,8 +62,13 @@ jobs:
             else
               echo "  ✗ Failed (HTTP $HTTP)"
               echo "$BODY" | jq . || echo "$BODY"
+              DISABLE_FAILED=true
             fi
           done <<< "$URLS"
 
           echo ""
+          if [ "$DISABLE_FAILED" = "true" ]; then
+            echo "Some sites failed — see above for details"
+            exit 1
+          fi
           echo "Done. All sites will now only deploy via the deploy.yml workflow."

@@ -125,6 +125,7 @@ jobs:
 
           DEPLOY_TABLE=""       # rows for the PR comment table
           APPS_JSON_UPDATED=false
+          DEPLOY_FAILED=false
 
           for FOLDER in $(echo "$APPS" | jq -r '.[]'); do
             echo ""
@@ -211,7 +212,12 @@ jobs:
             # ── c. Build ─────────────────────────────────────────────────────
             if [ -n "$BUILD_CMD" ]; then
               echo "  Building..."
-              (cd "$APP_DIR" && eval "$BUILD_CMD")
+              if ! (cd "$APP_DIR" && eval "$BUILD_CMD"); then
+                echo "  ✗ Build failed for $FOLDER"
+                DEPLOY_TABLE="${DEPLOY_TABLE}\n| \`$FOLDER\` | ❌ Build failed |"
+                DEPLOY_FAILED=true
+                continue
+              fi
             fi
 
             # ── d. Deploy ────────────────────────────────────────────────────
@@ -239,13 +245,19 @@ jobs:
             [ "$IS_PROD" = "true" ] && DEPLOY_ARGS+=("--prod")
 
             echo "  Deploying (prod=$IS_PROD)..."
-            DEPLOY_OUT=$(netlify deploy "${DEPLOY_ARGS[@]}" 2>/dev/null || echo "{}")
+            if ! DEPLOY_OUT=$(netlify deploy "${DEPLOY_ARGS[@]}" 2>&1); then
+              echo "  ✗ Deploy failed for $FOLDER:"
+              echo "$DEPLOY_OUT"
+              DEPLOY_TABLE="${DEPLOY_TABLE}\n| \`$FOLDER\` | ❌ Deploy failed |"
+              DEPLOY_FAILED=true
+              continue
+            fi
 
             # Production → main URL; preview → unique deploy URL
             if [ "$IS_PROD" = "true" ]; then
-              DEPLOY_URL=$(echo "$DEPLOY_OUT" | jq -r '.url // empty')
+              DEPLOY_URL=$(echo "$DEPLOY_OUT" | jq -r '.url // empty' 2>/dev/null || true)
             else
-              DEPLOY_URL=$(echo "$DEPLOY_OUT" | jq -r '.deploy_url // empty')
+              DEPLOY_URL=$(echo "$DEPLOY_OUT" | jq -r '.deploy_url // empty' 2>/dev/null || true)
             fi
 
             if [ -n "$DEPLOY_URL" ]; then
@@ -255,6 +267,7 @@ jobs:
               echo "  ✗ No URL returned — deploy may have failed"
               echo "$DEPLOY_OUT"
               DEPLOY_TABLE="${DEPLOY_TABLE}\n| \`$FOLDER\` | ❌ Deploy failed |"
+              DEPLOY_FAILED=true
             fi
           done
 
@@ -269,6 +282,8 @@ jobs:
             echo "EOF"
             echo "apps_json_updated=$APPS_JSON_UPDATED"
           } >> "$GITHUB_OUTPUT"
+
+          [ "$DEPLOY_FAILED" = "false" ] || { echo "One or more apps failed to deploy — see above"; exit 1; }
 
       # ── Commit apps.json if new sites were provisioned ─────────────────────
       - name: Commit updated apps.json
