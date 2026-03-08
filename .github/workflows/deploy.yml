@@ -243,9 +243,20 @@ jobs:
             # Run from inside the app directory so the CLI resolves netlify.toml
             # paths correctly and doesn't trigger an unintended build step.
             echo "  Deploying (prod=$IS_PROD)..."
-            if ! DEPLOY_OUT=$(cd "$APP_DIR" && netlify deploy "${DEPLOY_ARGS[@]}" 2>&1); then
-              echo "  ✗ Deploy failed for $FOLDER:"
-              echo "$DEPLOY_OUT"
+            echo "  Site: $SITE_NAME  |  Dir: $PUBLISH_DIR (from $APP_DIR)"
+            DEPLOY_OUT=""
+            DEPLOY_EXIT=0
+            DEPLOY_OUT=$(cd "$APP_DIR" && netlify deploy "${DEPLOY_ARGS[@]}" 2>&1) || DEPLOY_EXIT=$?
+
+            if [ "$DEPLOY_EXIT" -ne 0 ]; then
+              echo "  ✗ Deploy failed for $FOLDER (exit $DEPLOY_EXIT):"
+              # Try to extract a structured error from JSON output; fall back to raw
+              JSON_ERR=$(echo "$DEPLOY_OUT" | jq -r '.error // empty' 2>/dev/null || true)
+              if [ -n "$JSON_ERR" ]; then
+                echo "  Error: $JSON_ERR"
+                echo "  Full output:"
+              fi
+              echo "$DEPLOY_OUT" | sed 's/^/    /'
               DEPLOY_TABLE="${DEPLOY_TABLE}\n| \`$FOLDER\` | ❌ Deploy failed |"
               DEPLOY_FAILED=true
               continue

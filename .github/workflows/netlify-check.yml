@@ -1,0 +1,153 @@
+name: "🔍 Netlify: Check Site Configuration"
+
+# Audits every app in apps.json against the Netlify API and reports
+# on anything that might prevent a successful CLI deploy.
+#
+# Checks per site:
+#   - Site exists and URL matches apps.json
+#   - No GitHub repo linked (would enable Netlify Bot auto-builds)
+#   - stop_builds setting (should be true to suppress bot deploys)
+#   - Build command / publish dir recorded by Netlify
+#   - Latest deploy state
+#   - Auth token is valid
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: none
+
+jobs:
+  check:
+    name: Audit Netlify sites
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Check auth token
+        env:
+          NETLIFY_AUTH_TOKEN: ${{ secrets.NETLIFY_AUTH_TOKEN }}
+        run: |
+          echo "══════════════════════════════════════════════════════"
+          echo "Checking NETLIFY_AUTH_TOKEN …"
+          RESP=$(curl -s -w "\n%{http_code}" \
+            "https://api.netlify.com/api/v1/user" \
+            -H "Authorization: Bearer $NETLIFY_AUTH_TOKEN")
+          HTTP=$(echo "$RESP" | tail -1)
+          BODY=$(echo "$RESP" | head -n -1)
+          if [ "$HTTP" = "200" ]; then
+            NAME=$(echo "$BODY" | jq -r '.full_name // .email // "unknown"')
+            echo "  ✓ Token valid — authenticated as: $NAME"
+          else
+            echo "  ✗ Token invalid or missing (HTTP $HTTP)"
+            echo "$BODY" | jq . || echo "$BODY"
+            exit 1
+          fi
+
+      - name: Audit each site
+        env:
+          NETLIFY_AUTH_TOKEN: ${{ secrets.NETLIFY_AUTH_TOKEN }}
+        run: |
+          set -euo pipefail
+
+          ISSUES=0
+
+          # Read all apps that have a URL configured
+          APPS=$(jq -c '.apps[]' apps.json)
+
+          while IFS= read -r APP; do
+            FOLDER=$(echo "$APP" | jq -r '.folder')
+            EXPECTED_URL=$(echo "$APP" | jq -r '.url // ""')
+
+            echo ""
+            echo "══════════════════════════════════════════════════════"
+            echo "App folder : $FOLDER"
+
+            if [ -z "$EXPECTED_URL" ] || [ "$EXPECTED_URL" = "null" ]; then
+              echo "  ⚠ No URL in apps.json — site not yet provisioned, skipping"
+              continue
+            fi
+
+            SITE_NAME=$(echo "$EXPECTED_URL" | sed 's|https://||; s|\.netlify\.app.*||')
+            echo "  Expected URL : $EXPECTED_URL"
+            echo "  Site name    : $SITE_NAME"
+
+            # ── Look up the site by name ─────────────────────────────────
+            SITE_LIST=$(curl -s --max-time 20 \
+              "https://api.netlify.com/api/v1/sites?name=$SITE_NAME&filter=all" \
+              -H "Authorization: Bearer $NETLIFY_AUTH_TOKEN")
+
+            SITE=$(echo "$SITE_LIST" | jq -r \
+              --arg n "$SITE_NAME" '.[] | select(.name == $n)' | head -c 100000)
+
+            if [ -z "$SITE" ]; then
+              echo "  ✗ SITE NOT FOUND on Netlify — provisioning has not run or site was deleted"
+              ISSUES=$((ISSUES+1))
+              continue
+            fi
+
+            SITE_ID=$(echo "$SITE"    | jq -r '.id // ""')
+            ACTUAL_URL=$(echo "$SITE" | jq -r '.ssl_url // ""')
+            STOP_BUILDS=$(echo "$SITE" | jq -r '.build_settings.stop_builds // false')
+            BUILD_CMD=$(echo "$SITE"   | jq -r '.build_settings.cmd // ""')
+            BUILD_DIR=$(echo "$SITE"   | jq -r '.build_settings.dir // ""')
+            REPO_URL=$(echo "$SITE"    | jq -r '.build_settings.repo_url // ""')
+
+            echo "  Site ID      : $SITE_ID"
+
+            # URL match
+            if [ "$ACTUAL_URL" = "$EXPECTED_URL" ]; then
+              echo "  URL          : ✓ $ACTUAL_URL"
+            else
+              echo "  URL          : ✗ mismatch — Netlify=$ACTUAL_URL, apps.json=$EXPECTED_URL"
+              ISSUES=$((ISSUES+1))
+            fi
+
+            # Repo link (should be empty — we want CLI-only deploys)
+            if [ -z "$REPO_URL" ] || [ "$REPO_URL" = "null" ]; then
+              echo "  Repo link    : ✓ none (CLI-only deploy, correct)"
+            else
+              echo "  Repo link    : ⚠ linked to $REPO_URL — Netlify Bot may auto-deploy"
+              ISSUES=$((ISSUES+1))
+            fi
+
+            # stop_builds
+            if [ "$STOP_BUILDS" = "true" ]; then
+              echo "  stop_builds  : ✓ true"
+            else
+              echo "  stop_builds  : ⚠ false — run the 'Disable Bot Auto-Publishing' workflow"
+            fi
+
+            # Build settings recorded by Netlify
+            echo "  Build cmd    : ${BUILD_CMD:-(not set)}"
+            echo "  Build dir    : ${BUILD_DIR:-(not set)}"
+
+            # ── Latest deploy ────────────────────────────────────────────
+            DEPLOYS=$(curl -s --max-time 20 \
+              "https://api.netlify.com/api/v1/sites/$SITE_ID/deploys?per_page=1" \
+              -H "Authorization: Bearer $NETLIFY_AUTH_TOKEN")
+            DEPLOY_STATE=$(echo "$DEPLOYS" | jq -r '.[0].state // "none"')
+            DEPLOY_ERR=$(echo "$DEPLOYS"   | jq -r '.[0].error_message // ""')
+            DEPLOY_CTX=$(echo "$DEPLOYS"   | jq -r '.[0].context // ""')
+            DEPLOY_TIME=$(echo "$DEPLOYS"  | jq -r '.[0].created_at // ""')
+
+            if [ "$DEPLOY_STATE" = "ready" ]; then
+              echo "  Last deploy  : ✓ ready ($DEPLOY_CTX, $DEPLOY_TIME)"
+            elif [ "$DEPLOY_STATE" = "none" ]; then
+              echo "  Last deploy  : ⚠ no deploys found — site has never been deployed"
+            else
+              echo "  Last deploy  : ✗ state=$DEPLOY_STATE ($DEPLOY_CTX, $DEPLOY_TIME)"
+              [ -n "$DEPLOY_ERR" ] && echo "  Deploy error : $DEPLOY_ERR"
+              ISSUES=$((ISSUES+1))
+            fi
+
+          done <<< "$(echo "$APPS")"
+
+          echo ""
+          echo "══════════════════════════════════════════════════════"
+          if [ "$ISSUES" -eq 0 ]; then
+            echo "All sites look good."
+          else
+            echo "Found $ISSUES issue(s) — see above for details."
+            exit 1
+          fi
