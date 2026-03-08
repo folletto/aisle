@@ -36,6 +36,15 @@
         "london"
       ],
       "url": "https://aisle-tfl-status.netlify.app"
+    },
+    {
+      "name": "Test",
+      "description": "Blank app for testing and building from scratch",
+      "folder": "test",
+      "tags": [
+        "meta"
+      ],
+      "url": "https://aisle-test.netlify.app"
     }
   ]
 }
