@@ -1,34 +1,69 @@
 # GitHub Actions
 
-This repository uses two GitHub Actions workflows, both located under `.github/workflows/`.
+This repository uses GitHub Actions workflows located under `.github/workflows/`.
 
 ---
 
-## deploy-netlify-new.yml — Auto-Deploy New Apps
+## netlify.yml — Netlify CI (Setup + Deploy)
 
-**Trigger:** Push to `main` when `apps.json` changes.
+**Triggers:**
+- Push to `main` when `apps/**` or `apps.json` change → production deploy
+- Pull request (opened, synchronize, reopened) when `apps/**` or `apps.json` change → preview deploy
+- Manual workflow dispatch → specify apps to deploy
 
-**Purpose:** Automatically creates a Netlify site for any app in `apps.json` that does not yet have a `url` field, then writes the generated URL back to `apps.json`.
+**Purpose:** Two-job workflow that first provisions Netlify containers for new apps, then builds and deploys changed apps.
 
-**How it works:**
+### Job 1: Setup Netlify Containers
 
-1. **Find undeployed apps** — Reads `apps.json` with `jq` and collects entries where `url` is null or empty.
-2. **Fetch GitHub App installation ID** — Calls the Netlify API to get the GitHub App installation ID linked to the Netlify account (needed for repo-connected deployments).
-3. **Create Netlify sites** — For each undeployed app folder:
-   - Verifies the folder exists under `apps/`.
-   - Creates a Netlify site named `aisle-<folder>` via the Netlify API, with the base directory set to `apps/<folder>`.
-   - Captures the generated `ssl_url`.
-4. **Update apps.json** — Writes the live URL back into the matching entry in `apps.json`.
-5. **Commit and push** — Commits the updated `apps.json` as `github-actions[bot]` with `[skip ci]` to avoid re-triggering the workflow.
+1. **Find unprovisioned apps** — scans `apps.json` for entries without a `siteId` (excluding `deleted` entries).
+2. **Create Netlify sites** — uses `netlify sites:create` CLI to provision each missing site with the name `aisle-<folder>`. Falls back to looking up existing sites if the name is already taken.
+3. **Update apps.json** — writes the `siteId` and `url` back into apps.json.
+4. **Commit and push** — commits as `github-actions[bot]` with message `Bot: Netlify container created for app <name>`.
+
+### Job 2: Build & Deploy
+
+Runs after setup completes. Re-checks out the branch to pick up any commits from setup.
+
+1. **Detect changed apps** — determines which apps need deployment:
+   - For push to main: diffs the previous commit against current
+   - For PRs: diffs against the base branch
+   - For manual dispatch: uses the provided app list, or "all"
+   - Detects both file changes under `apps/<folder>/` and entry-level changes in `apps.json`
+2. **Build** — reads `netlify.toml` from each app's folder for the build command and publish directory. Runs the build command if present (skips no-op `echo` placeholders).
+3. **Deploy** — uses `netlify deploy` with `--site` pointing to the `siteId` from apps.json.
+   - Push to main → production deploy (`--prod`)
+   - Pull request → draft deploy (generates a unique preview URL)
+4. **PR comment** — for PRs, creates or updates a single bot comment titled "## Netlify Deploy Preview" with a table of app → preview URL.
 
 **Required secrets:**
+
 | Secret | Description |
 |---|---|
 | `NETLIFY_AUTH_TOKEN` | Personal access token for the Netlify account |
-| `NETLIFY_TEAM_ID` | Netlify team/account slug |
-| `GITHUB_TOKEN` | Provided automatically by GitHub Actions |
+| `NETLIFY_TEAM_ID` | Netlify team/account slug (used for site creation) |
 
-**Permissions:** `contents: write` (to push the updated `apps.json`).
+**Permissions:** `contents: write` (commit apps.json), `pull-requests: write` (post comments).
+
+---
+
+## netlify-status.yml — 🕹️ Netlify Deployment Status
+
+**Trigger:** Manual workflow dispatch only.
+
+**Purpose:** Audits all app entries in `apps.json` and categorises their deployment status into four states:
+
+| Status | Meaning |
+|---|---|
+| ✅ Deployed | Folder exists in repo AND Netlify container is reachable |
+| ⚠️ Unlinked | Folder exists in repo BUT no Netlify container (missing siteId or site unreachable) |
+| 🗑️ Orphaned | Marked as deleted BUT Netlify container still exists (needs cleanup) |
+| 🏁 Cleaned up | Marked as deleted AND no Netlify container (fully removed) |
+
+Results are written to the GitHub Actions step summary for easy reading.
+
+**Required secrets:** `NETLIFY_AUTH_TOKEN`
+
+**Permissions:** `contents: read`
 
 ---
 
@@ -36,17 +71,34 @@ This repository uses two GitHub Actions workflows, both located under `.github/w
 
 **Trigger:** Pull requests targeting `main` (opened, synchronized, or reopened).
 
-**Purpose:** Detects when a PR modifies files across more than one app directory and adds a warning comment to the PR.
+**Purpose:** Warns when a PR modifies files across more than one app directory. Posts a single comment:
 
-**How it works:**
+> ⚠️ This PR changes files across the app boundary
 
-1. Uses `actions/github-script` to call the GitHub API and list all files changed in the PR.
-2. Extracts the app folder name from each changed file path that matches `apps/<folder>/...`.
-3. If two or more distinct app folders are affected, checks whether a warning comment already exists (to avoid duplicates).
-4. If no warning has been posted yet, posts the comment:
+**Permissions:** `contents: read`, `pull-requests: write`
 
-   > ⚠️ This PR changes files across the app boundary
+---
 
-**Permissions:** `contents: read`, `pull-requests: write` (to post comments).
+## disable-netlify-autobuild.yml — 🕹️ Netlify: Disable Bot Auto-Publishing
 
-**Why this matters:** Apps in this repo are meant to be independent. A PR that touches multiple apps at once could indicate unintended coupling or a mistake. The warning is informational — it does not block merging.
+**Trigger:** Manual workflow dispatch only.
+
+**Purpose:** One-time utility to disable Netlify Bot auto-publishing on all sites. After running, all deployments go through the `netlify.yml` workflow instead.
+
+**Required secrets:** `NETLIFY_AUTH_TOKEN`
+
+---
+
+## apps.json Schema
+
+Each app entry in `apps.json` supports these fields:
+
+| Field | Required | Description |
+|---|---|---|
+| `name` | Yes | Human-readable app name |
+| `description` | Yes | Short description |
+| `folder` | Yes | Directory name under `apps/` |
+| `url` | Auto | Live Netlify URL (set by setup job) |
+| `siteId` | Auto | Netlify site ID (set by setup job) |
+| `tags` | Yes | Array of tag strings |
+| `deleted` | No | Set to `true` to mark an app as deleted |

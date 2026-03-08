@@ -11,7 +11,8 @@ aisle/
 │   └── github-actions.md     # How the GitHub Actions work
 ├── .github/
 │   └── workflows/
-│       ├── deploy-netlify-new.yml   # Auto-creates Netlify sites for new apps
+│       ├── netlify.yml              # CI: provisions containers + deploys apps
+│       ├── netlify-status.yml       # Manual audit of deployment status
 │       └── check-cross-app.yml      # Warns when a PR touches multiple apps
 ├── apps/                     # All mini-apps (including the launcher)
 │   ├── -launcher/            # The central landing page / app gallery
@@ -38,14 +39,17 @@ aisle/
 {
   "name": "My App",
   "description": "What it does",
-  "url": "https://aisle-my-app.netlify.app",
   "folder": "my-app",
+  "url": "https://aisle-my-app.netlify.app",
+  "siteId": "xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx",
   "tags": ["utility"]
 }
 ```
 
 - **`folder`** maps to a directory under `apps/`.
-- **`url`** is the live Netlify URL. Omitting it triggers automatic deployment (see below).
+- **`siteId`** is the Netlify site UUID. Omitting it signals CI to create a new Netlify container.
+- **`url`** is the live Netlify URL (set automatically alongside `siteId`).
+- **`deleted`** (optional) — set to `true` to mark an app as removed.
 - The `-launcher` entry represents the landing page itself (base URL of the whole project).
 
 ### apps/ Directory
@@ -60,8 +64,8 @@ The `-launcher` Netlify site (the landing page) fetches `apps.json` live from th
 
 ### Adding a New App
 
-1. Create `apps/<app-name>/index.html` and `apps/<app-name>/netlify.toml`.
-2. Add an entry to `apps.json` **without** a `url` field.
-3. Push to `main` — the `deploy-netlify-new` action auto-creates the Netlify site and writes the URL back to `apps.json`.
+1. Create `apps/<app-name>/` with at least an `index.html` (or full app) and `netlify.toml`.
+2. Add an entry to `apps.json` **without** `siteId` or `url` fields.
+3. Open a PR or push to `main` — the `netlify.yml` setup job auto-creates the Netlify container and writes `siteId` and `url` back to `apps.json`, then the deploy job deploys the app.
 
-See `AGENTS.md` for full instructions and file templates.
+See `AGENTS.md` and `.agents/new-app.md` for full instructions and file templates.
