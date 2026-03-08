@@ -1,4 +1,4 @@
-name: "🔍 Netlify: Check Site Configuration"
+name: "🕹️ Netlify: Check Site Configuration"
 
 # Audits every app in apps.json against the Netlify API and reports
 # on anything that might prevent a successful CLI deploy.
