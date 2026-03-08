@@ -106,5 +106,5 @@ jobs:
           git config user.email "github-actions[bot]@users.noreply.github.com"
           git add apps.json
           git diff --staged --quiet && echo "No changes to commit" && exit 0
-          git commit -m "Actions: update apps.json with Netlify URLs for new apps [skip ci]"
+          git commit -m "Bot: update apps.json with Netlify URLs for new apps [skip ci]"
           git push origin HEAD:${{ github.head_ref || github.ref_name }}
