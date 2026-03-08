@@ -1,4 +1,4 @@
-name: 🕹️ Netlify: Disable Bot Auto-Publishing
+name: "🕹️ Netlify: Disable Bot Auto-Publishing"
 
 # One-time utility: run this manually to stop the Netlify Bot from
 # auto-deploying your existing sites.  After this, all deployments go
