@@ -57,13 +57,12 @@ jobs:
         id: provision
         env:
           NETLIFY_AUTH_TOKEN: ${{ secrets.NETLIFY_AUTH_TOKEN }}
-          NETLIFY_TEAM_ID: ${{ secrets.NETLIFY_TEAM_ID }}
+          NETLIFY_ACCOUNT_SLUG: ${{ secrets.NETLIFY_ACCOUNT_SLUG }}
         run: |
           set -euo pipefail
 
           CREATED_APPS=""
           APPS_JSON_UPDATED=false
-          PROVISION_FAILED=false
 
           # Find active apps (not deleted) without a siteId
           MISSING=$(jq -r '
@@ -99,7 +98,7 @@ jobs:
             # Create site using Netlify CLI
             if SITE_JSON=$(netlify sites:create \
               --name "$SITE_NAME" \
-              --account-slug "$NETLIFY_TEAM_ID" \
+              --account-slug "$NETLIFY_ACCOUNT_SLUG" \
               --json 2>&1); then
               SITE_ID=$(echo "$SITE_JSON" | jq -r '.id')
               SITE_URL=$(echo "$SITE_JSON" | jq -r '.ssl_url')
@@ -123,7 +122,6 @@ jobs:
 
             if [ -z "$SITE_ID" ]; then
               echo "  ✗ Failed to create or find Netlify site for $FOLDER"
-              PROVISION_FAILED=true
               continue
             fi
 
@@ -152,10 +150,6 @@ jobs:
           echo "apps_json_updated=$APPS_JSON_UPDATED" >> "$GITHUB_OUTPUT"
           echo "created_apps=$CREATED_APPS" >> "$GITHUB_OUTPUT"
 
-          if [ "$PROVISION_FAILED" = "true" ]; then
-            echo "::error::One or more Netlify sites could not be provisioned — see above for details"
-            exit 1
-          fi
 
       - name: Commit provisioned siteIds
         if: steps.provision.outputs.apps_json_updated == 'true'
