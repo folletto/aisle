@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>HTML Test</title>
+  <style>
+    *,
+    *::before,
+    *::after {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      background: #f5f5f5;
+      color: #1a1a1a;
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 1rem;
+    }
+
+    .card {
+      background: #fff;
+      border-radius: 12px;
+      box-shadow: 0 2px 12px rgba(0, 0, 0, 0.08);
+      padding: 2rem;
+      max-width: 420px;
+      width: 100%;
+      text-align: center;
+    }
+
+    .card h1 {
+      font-size: 1.5rem;
+      margin-bottom: 0.5rem;
+    }
+
+    .card p {
+      color: #666;
+      margin-bottom: 1.5rem;
+      line-height: 1.5;
+    }
+
+    .status {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+      background: #e8f5e9;
+      color: #2e7d32;
+      padding: 0.5rem 1rem;
+      border-radius: 999px;
+      font-weight: 500;
+      font-size: 0.9rem;
+      margin-bottom: 1.5rem;
+    }
+
+    .status::before {
+      content: "";
+      width: 8px;
+      height: 8px;
+      background: #2e7d32;
+      border-radius: 50%;
+      display: inline-block;
+    }
+
+    .info {
+      display: grid;
+      gap: 0.75rem;
+      text-align: left;
+      border-top: 1px solid #eee;
+      padding-top: 1.5rem;
+    }
+
+    .info-row {
+      display: flex;
+      justify-content: space-between;
+      font-size: 0.875rem;
+    }
+
+    .info-row .label {
+      color: #888;
+    }
+
+    .info-row .value {
+      font-weight: 500;
+    }
+  </style>
+</head>
+<body>
+  <div class="card">
+    <h1>HTML Test</h1>
+    <p>A minimal static page to verify deployment is working.</p>
+    <div class="status">All systems go</div>
+    <div class="info">
+      <div class="info-row">
+        <span class="label">Type</span>
+        <span class="value">Static HTML</span>
+      </div>
+      <div class="info-row">
+        <span class="label">Build</span>
+        <span class="value">None required</span>
+      </div>
+      <div class="info-row">
+        <span class="label">Loaded at</span>
+        <span class="value" id="timestamp">—</span>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    document.getElementById("timestamp").textContent =
+      new Date().toLocaleString();
+  </script>
+</body>
+</html>
