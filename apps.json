@@ -45,8 +45,8 @@
       "name": "Mini Test",
       "description": "A simple static test page to verify deployment",
       "folder": "mini-test",
-      "url": "",
-      "siteId": "",
+      "url": "https://aisle-mini-test.netlify.app",
+      "siteId": "77345105-247a-4811-80bb-629f5ca8cdd5",
       "tags": [
         "test"
       ]
