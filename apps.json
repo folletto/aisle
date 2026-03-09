@@ -45,8 +45,8 @@
       "name": "HTML Test",
       "description": "A minimal static page to verify deployment is working",
       "folder": "html-test",
-      "url": "",
-      "siteId": "",
+      "url": "https://aisle-html-test.netlify.app",
+      "siteId": "39a65073-27d1-41fc-a456-10f2d8b7ce85",
       "tags": [
         "test"
       ]
