@@ -50,9 +50,6 @@ jobs:
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Install Netlify CLI
-        run: npm install -g netlify-cli
-
       - name: Provision missing Netlify sites
         id: provision
         env:
@@ -95,17 +92,22 @@ jobs:
             echo "══════════════════════════════════════════════════════"
             echo "Provisioning: $APP_NAME ($FOLDER) → $SITE_NAME"
 
-            # Create site using Netlify CLI
-            if SITE_JSON=$(netlify sites:create \
-              --name "$SITE_NAME" \
-              --account-slug "$NETLIFY_ACCOUNT_SLUG" \
-              --json 2>&1); then
+            # Create site using Netlify API
+            CREATE_CODE=$(curl -s -o /tmp/netlify_create.json -w '%{http_code}' \
+              -X POST "https://api.netlify.com/api/v1/${NETLIFY_ACCOUNT_SLUG}/sites" \
+              -H "Authorization: Bearer $NETLIFY_AUTH_TOKEN" \
+              -H "Content-Type: application/json" \
+              -d "{\"name\": \"$SITE_NAME\"}" || echo "000")
+
+            if [ "$CREATE_CODE" = "201" ] || [ "$CREATE_CODE" = "200" ]; then
+              SITE_JSON=$(cat /tmp/netlify_create.json)
               SITE_ID=$(echo "$SITE_JSON" | jq -r '.id')
               SITE_URL=$(echo "$SITE_JSON" | jq -r '.ssl_url')
             else
               # Name may already be taken — look up existing site
-              echo "  Create failed with output:"
-              echo "  $SITE_JSON"
+              echo "  Create returned HTTP $CREATE_CODE:"
+              cat /tmp/netlify_create.json 2>/dev/null || true
+              echo ""
               echo "  Looking up existing site..."
               HTTP_CODE=$(curl -s -o /tmp/netlify_lookup.json -w '%{http_code}' \
                 "https://api.netlify.com/api/v1/sites/${SITE_NAME}.netlify.app" \
