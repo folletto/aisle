@@ -57,7 +57,7 @@ jobs:
         id: provision
         env:
           NETLIFY_AUTH_TOKEN: ${{ secrets.NETLIFY_AUTH_TOKEN }}
-          NETLIFY_TEAM_ID: ${{ secrets.NETLIFY_TEAM_ID }}
+          NETLIFY_ACCOUNT_SLUG: ${{ secrets.NETLIFY_ACCOUNT_SLUG }}
         run: |
           set -euo pipefail
 
@@ -98,16 +98,24 @@ jobs:
             # Create site using Netlify CLI
             if SITE_JSON=$(netlify sites:create \
               --name "$SITE_NAME" \
-              --account-slug "$NETLIFY_TEAM_ID" \
+              --account-slug "$NETLIFY_ACCOUNT_SLUG" \
               --json 2>&1); then
               SITE_ID=$(echo "$SITE_JSON" | jq -r '.id')
               SITE_URL=$(echo "$SITE_JSON" | jq -r '.ssl_url')
             else
               # Name may already be taken — look up existing site
-              echo "  Create failed — looking up existing site..."
-              LOOKUP=$(curl -sf \
+              echo "  Create failed with output:"
+              echo "  $SITE_JSON"
+              echo "  Looking up existing site..."
+              HTTP_CODE=$(curl -s -o /tmp/netlify_lookup.json -w '%{http_code}' \
                 "https://api.netlify.com/api/v1/sites/${SITE_NAME}.netlify.app" \
-                -H "Authorization: Bearer $NETLIFY_AUTH_TOKEN" || echo "{}")
+                -H "Authorization: Bearer $NETLIFY_AUTH_TOKEN" || echo "000")
+              if [ "$HTTP_CODE" = "200" ]; then
+                LOOKUP=$(cat /tmp/netlify_lookup.json)
+              else
+                echo "  Lookup returned HTTP $HTTP_CODE"
+                LOOKUP="{}"
+              fi
               SITE_ID=$(echo "$LOOKUP" | jq -r '.id // empty')
               SITE_URL=$(echo "$LOOKUP" | jq -r '.ssl_url // empty')
             fi
@@ -141,6 +149,7 @@ jobs:
           echo ""
           echo "apps_json_updated=$APPS_JSON_UPDATED" >> "$GITHUB_OUTPUT"
           echo "created_apps=$CREATED_APPS" >> "$GITHUB_OUTPUT"
+
 
       - name: Commit provisioned siteIds
         if: steps.provision.outputs.apps_json_updated == 'true'
@@ -391,13 +400,18 @@ jobs:
       - name: Post preview URLs on PR
         if: github.event_name == 'pull_request' && steps.deploy.outputs.deploy_rows != ''
         uses: actions/github-script@v7
+        env:
+          DEPLOY_ROWS: ${{ steps.deploy.outputs.deploy_rows }}
+          COMMIT_SHA: ${{ github.sha }}
+          RUN_ID: ${{ github.run_id }}
+          REPO: ${{ github.repository }}
         with:
           script: |
-            const rows = `${{ steps.deploy.outputs.deploy_rows }}`.trim();
+            const rows = (process.env.DEPLOY_ROWS || '').trim();
             if (!rows) return;
 
-            const sha = '${{ github.sha }}'.substring(0, 7);
-            const runUrl = `https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}`;
+            const sha = process.env.COMMIT_SHA.substring(0, 7);
+            const runUrl = `https://github.com/${process.env.REPO}/actions/runs/${process.env.RUN_ID}`;
             const body = [
               '## Netlify Deploy Preview',
               '',
