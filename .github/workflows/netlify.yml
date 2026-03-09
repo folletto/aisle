@@ -63,6 +63,7 @@ jobs:
 
           CREATED_APPS=""
           APPS_JSON_UPDATED=false
+          PROVISION_FAILED=false
 
           # Find active apps (not deleted) without a siteId
           MISSING=$(jq -r '
@@ -104,16 +105,25 @@ jobs:
               SITE_URL=$(echo "$SITE_JSON" | jq -r '.ssl_url')
             else
               # Name may already be taken — look up existing site
-              echo "  Create failed — looking up existing site..."
-              LOOKUP=$(curl -sf \
+              echo "  Create failed with output:"
+              echo "  $SITE_JSON"
+              echo "  Looking up existing site..."
+              HTTP_CODE=$(curl -s -o /tmp/netlify_lookup.json -w '%{http_code}' \
                 "https://api.netlify.com/api/v1/sites/${SITE_NAME}.netlify.app" \
-                -H "Authorization: Bearer $NETLIFY_AUTH_TOKEN" || echo "{}")
+                -H "Authorization: Bearer $NETLIFY_AUTH_TOKEN" || echo "000")
+              if [ "$HTTP_CODE" = "200" ]; then
+                LOOKUP=$(cat /tmp/netlify_lookup.json)
+              else
+                echo "  Lookup returned HTTP $HTTP_CODE"
+                LOOKUP="{}"
+              fi
               SITE_ID=$(echo "$LOOKUP" | jq -r '.id // empty')
               SITE_URL=$(echo "$LOOKUP" | jq -r '.ssl_url // empty')
             fi
 
             if [ -z "$SITE_ID" ]; then
               echo "  ✗ Failed to create or find Netlify site for $FOLDER"
+              PROVISION_FAILED=true
               continue
             fi
 
@@ -141,6 +151,11 @@ jobs:
           echo ""
           echo "apps_json_updated=$APPS_JSON_UPDATED" >> "$GITHUB_OUTPUT"
           echo "created_apps=$CREATED_APPS" >> "$GITHUB_OUTPUT"
+
+          if [ "$PROVISION_FAILED" = "true" ]; then
+            echo "::error::One or more Netlify sites could not be provisioned — see above for details"
+            exit 1
+          fi
 
       - name: Commit provisioned siteIds
         if: steps.provision.outputs.apps_json_updated == 'true'
