@@ -40,6 +40,16 @@
         "transport",
         "london"
       ]
+    },
+    {
+      "name": "Mini Test",
+      "description": "A simple static test page to verify deployment",
+      "folder": "mini-test",
+      "url": "",
+      "siteId": "",
+      "tags": [
+        "test"
+      ]
     }
   ]
 }
