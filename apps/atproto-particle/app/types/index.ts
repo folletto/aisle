@@ -34,6 +34,42 @@ export interface AggregatedAuthor {
   totalPostsInWindow: number;
 }
 
+export interface ReshareItem {
+  post: ProcessedPost;
+  author: {
+    did: string;
+    handle: string;
+    displayName: string;
+    avatar?: string;
+  };
+  resharedBy: {
+    did: string;
+    handle: string;
+    displayName: string;
+    avatar?: string;
+  };
+}
+
+export interface NotificationItem {
+  uri: string;
+  cid: string;
+  reason: string;
+  author: {
+    did: string;
+    handle: string;
+    displayName: string;
+    avatar?: string;
+  };
+  indexedAt: string;
+  text: string;
+  subjectUri?: string;
+}
+
+export interface SnapshotResult {
+  authors: AggregatedAuthor[];
+  reshares: ReshareItem[];
+}
+
 export interface UserSettings {
   intervals: TimeInterval[];
 }

@@ -1,4 +1,4 @@
-import { Settings } from "lucide-react";
+import { RefreshCw, Settings } from "lucide-react";
 import { Link } from "react-router";
 import { formatInterval, getNextInterval } from "~/engine/timeWindows";
 import type { TimeWindow, TimeInterval } from "~/types";
@@ -7,9 +7,16 @@ import styles from "./Header.module.css";
 interface HeaderProps {
   window?: TimeWindow | null;
   intervals?: TimeInterval[];
+  onRefresh?: () => void;
+  isLoading?: boolean;
 }
 
-export default function Header({ window: timeWindow, intervals }: HeaderProps) {
+export default function Header({
+  window: timeWindow,
+  intervals,
+  onRefresh,
+  isLoading,
+}: HeaderProps) {
   const windowLabel = timeWindow
     ? `${formatTime(timeWindow.start)} – ${formatTime(timeWindow.end)}`
     : null;
@@ -26,7 +33,19 @@ export default function Header({ window: timeWindow, intervals }: HeaderProps) {
           AT Particle
         </Link>
         {windowLabel && (
-          <span className={styles.window}>{windowLabel}</span>
+          <span className={styles.window}>
+            {windowLabel}
+            {onRefresh && (
+              <button
+                onClick={onRefresh}
+                className={`${styles.refreshBtn} ${isLoading ? styles.spinning : ""}`}
+                aria-label="Refresh"
+                disabled={isLoading}
+              >
+                <RefreshCw size={13} />
+              </button>
+            )}
+          </span>
         )}
       </div>
       <div className={styles.right}>

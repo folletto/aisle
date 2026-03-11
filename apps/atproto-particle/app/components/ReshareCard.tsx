@@ -1,17 +1,16 @@
 import { Heart, MessageCircle, Repeat2, Quote } from "lucide-react";
-import type { AggregatedAuthor } from "~/types";
+import type { ReshareItem } from "~/types";
 import { postLink } from "~/utils/postLink";
 import styles from "./AggregatedCard.module.css";
 
-interface AggregatedCardProps {
-  author: AggregatedAuthor;
+interface ReshareCardProps {
+  item: ReshareItem;
 }
 
-export default function AggregatedCard({ author }: AggregatedCardProps) {
-  const { topPost, totalPostsInWindow } = author;
-  const otherPosts = totalPostsInWindow - 1;
-  const postTime = topPost.createdAt
-    ? new Date(topPost.createdAt).toLocaleTimeString([], {
+export default function ReshareCard({ item }: ReshareCardProps) {
+  const { post, author, resharedBy } = item;
+  const postTime = post.createdAt
+    ? new Date(post.createdAt).toLocaleTimeString([], {
         hour: "numeric",
         minute: "2-digit",
       })
@@ -19,6 +18,11 @@ export default function AggregatedCard({ author }: AggregatedCardProps) {
 
   return (
     <article className={styles.card}>
+      <div className={styles.resharedByLine}>
+        <Repeat2 size={13} />
+        <span>Reshared by {resharedBy.displayName}</span>
+      </div>
+
       <div className={styles.top}>
         {author.avatar ? (
           <img
@@ -37,10 +41,10 @@ export default function AggregatedCard({ author }: AggregatedCardProps) {
       </div>
 
       <div className={styles.body}>
-        <p className={styles.text}>{topPost.text}</p>
+        <p className={styles.text}>{post.text}</p>
         {postTime && (
           <a
-            href={postLink(topPost.uri, author.handle)}
+            href={postLink(post.uri, author.handle)}
             target="_blank"
             rel="noopener noreferrer"
             className={styles.timeLink}
@@ -53,39 +57,21 @@ export default function AggregatedCard({ author }: AggregatedCardProps) {
       <div className={styles.metrics}>
         <span className={styles.metric} title="Replies">
           <MessageCircle size={14} />
-          {topPost.metrics.replies}
+          {post.metrics.replies}
         </span>
         <span className={styles.metric} title="Reposts">
           <Repeat2 size={14} />
-          {topPost.metrics.reposts}
+          {post.metrics.reposts}
         </span>
         <span className={styles.metric} title="Quotes">
           <Quote size={14} />
-          {topPost.metrics.quotes}
+          {post.metrics.quotes}
         </span>
         <span className={styles.metric} title="Likes">
           <Heart size={14} />
-          {topPost.metrics.likes}
+          {post.metrics.likes}
         </span>
       </div>
-
-      {(topPost.threadCount > 0 || otherPosts > 0) && (
-        <>
-          <div className={styles.separator} />
-          <div className={styles.counters}>
-            {topPost.threadCount > 0 && (
-              <span className={styles.counter}>
-                {topPost.threadCount} in thread
-              </span>
-            )}
-            {otherPosts > 0 && (
-              <span className={styles.counter}>
-                +{otherPosts} other post{otherPosts > 1 ? "s" : ""} this session
-              </span>
-            )}
-          </div>
-        </>
-      )}
     </article>
   );
 }

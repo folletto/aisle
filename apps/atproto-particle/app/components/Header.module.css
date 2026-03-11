@@ -24,11 +24,37 @@
 }
 
 .window {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
   font-size: 13px;
   color: var(--color-text-secondary);
   background: var(--color-surface);
   padding: 3px 10px;
   border-radius: var(--radius-sm);
+}
+
+.refreshBtn {
+  display: inline-flex;
+  align-items: center;
+  color: var(--color-text-muted);
+  transition: color 0.15s;
+}
+
+.refreshBtn:hover:not(:disabled) {
+  color: var(--color-primary);
+}
+
+.refreshBtn:disabled {
+  opacity: 0.5;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+.spinning svg {
+  animation: spin 0.8s linear infinite;
 }
 
 .right {

@@ -1,33 +1,82 @@
-import type { AggregatedAuthor } from "~/types";
+import type { AggregatedAuthor, NotificationItem, ReshareItem } from "~/types";
+import type { TabId } from "./TabBar";
 import AggregatedCard from "./AggregatedCard";
+import ReshareCard from "./ReshareCard";
+import NotificationCard from "./NotificationCard";
 import styles from "./MainList.module.css";
 
 interface MainListProps {
+  activeTab: TabId;
   authors: AggregatedAuthor[];
+  reshares: ReshareItem[];
+  notifications: NotificationItem[];
   isLoading: boolean;
+  progress?: string | null;
 }
 
-export default function MainList({ authors, isLoading }: MainListProps) {
+export default function MainList({
+  activeTab,
+  authors,
+  reshares,
+  notifications,
+  isLoading,
+  progress,
+}: MainListProps) {
   if (isLoading) {
     return (
       <div className={styles.status}>
         <p>Loading timeline...</p>
+        {progress && <p className={styles.progress}>{progress}</p>}
       </div>
     );
   }
 
-  if (authors.length === 0) {
+  if (activeTab === "snapshot") {
+    if (authors.length === 0) {
+      return (
+        <div className={styles.status}>
+          <p>No posts in this time window.</p>
+        </div>
+      );
+    }
+    return (
+      <div className={styles.list}>
+        {authors.map((author) => (
+          <AggregatedCard key={author.did} author={author} />
+        ))}
+      </div>
+    );
+  }
+
+  if (activeTab === "reshares") {
+    if (reshares.length === 0) {
+      return (
+        <div className={styles.status}>
+          <p>No reshares in this time window.</p>
+        </div>
+      );
+    }
+    return (
+      <div className={styles.list}>
+        {reshares.map((item, i) => (
+          <ReshareCard key={`${item.post.uri}-${item.resharedBy.did}-${i}`} item={item} />
+        ))}
+      </div>
+    );
+  }
+
+  // notifications
+  if (notifications.length === 0) {
     return (
       <div className={styles.status}>
-        <p>No posts in this time window.</p>
+        <p>No notifications in this time window.</p>
       </div>
     );
   }
-
   return (
     <div className={styles.list}>
-      {authors.map((author) => (
-        <AggregatedCard key={author.did} author={author} />
+      {notifications.map((item, i) => (
+        <NotificationCard key={`${item.uri}-${i}`} item={item} />
       ))}
     </div>
   );

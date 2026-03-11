@@ -1,13 +1,16 @@
 import { AtpAgent } from "@atproto/api";
 import type {
   AggregatedAuthor,
+  NotificationItem,
   PostMetrics,
   ProcessedPost,
+  ReshareItem,
+  SnapshotResult,
   TimeWindow,
 } from "~/types";
 import { debugStore } from "~/debug/debugStore";
 
-interface FeedViewPost {
+export interface FeedViewPost {
   post: {
     uri: string;
     cid: string;
@@ -25,8 +28,19 @@ interface FeedViewPost {
     quoteCount?: number;
   };
   reply?: unknown;
-  reason?: unknown;
+  reason?: {
+    $type?: string;
+    by?: {
+      did: string;
+      handle: string;
+      displayName?: string;
+      avatar?: string;
+    };
+    indexedAt?: string;
+  };
 }
+
+export type ProgressCallback = (pagesLoaded: number) => void;
 
 /**
  * Standalone UpdateEngine decoupled from React.
@@ -42,7 +56,10 @@ export class UpdateEngine {
   /**
    * Fetch timeline posts within the given time window.
    */
-  async fetchTimelineWindow(window: TimeWindow): Promise<FeedViewPost[]> {
+  async fetchTimelineWindow(
+    window: TimeWindow,
+    onProgress?: ProgressCallback
+  ): Promise<FeedViewPost[]> {
     const posts: FeedViewPost[] = [];
     const allRaw: FeedViewPost[] = [];
     let cursor: string | undefined;
@@ -61,6 +78,7 @@ export class UpdateEngine {
 
       if (!res.data.feed || res.data.feed.length === 0) break;
       pagesLoaded++;
+      onProgress?.(pagesLoaded);
 
       let olderCount = 0;
       for (const item of res.data.feed) {
@@ -117,13 +135,28 @@ export class UpdateEngine {
   }
 
   /**
+   * Sort items by their top post's rank (most engaging first).
+   */
+  static sortByRank<T extends { metrics: PostMetrics }>(items: T[]): T[] {
+    return [...items].sort((a, b) =>
+      UpdateEngine.comparePostRank(a.metrics, b.metrics)
+    );
+  }
+
+  /**
    * Process raw feed posts into aggregated author data.
+   * Filters out replies and reshares — only original posts.
    */
   static aggregate(feedPosts: FeedViewPost[]): AggregatedAuthor[] {
+    // Filter to original posts only (no replies, no reshares)
+    const originals = feedPosts.filter(
+      (item) => !item.reply && !item.reason
+    );
+
     // Group by author DID
     const byAuthor = new Map<string, FeedViewPost[]>();
 
-    for (const item of feedPosts) {
+    for (const item of originals) {
       const did = item.post.author.did;
       const existing = byAuthor.get(did);
       if (existing) {
@@ -191,13 +224,125 @@ export class UpdateEngine {
   }
 
   /**
-   * Full pipeline: fetch + aggregate.
+   * Extract reshares from feed posts, sorted by engagement rank.
    */
-  async getSnapshot(window: TimeWindow): Promise<AggregatedAuthor[]> {
+  static processReshares(feedPosts: FeedViewPost[]): ReshareItem[] {
+    const reshares: ReshareItem[] = [];
+
+    for (const item of feedPosts) {
+      if (!item.reason?.by) continue;
+
+      const metrics = UpdateEngine.extractMetrics(item.post);
+      const record = item.post.record as {
+        text?: string;
+        createdAt?: string;
+      };
+
+      reshares.push({
+        post: {
+          uri: item.post.uri,
+          cid: item.post.cid,
+          text: record.text ?? "",
+          createdAt: record.createdAt ?? "",
+          metrics,
+          threadCount: 0,
+          embed: item.post.embed,
+        },
+        author: {
+          did: item.post.author.did,
+          handle: item.post.author.handle,
+          displayName: item.post.author.displayName || item.post.author.handle,
+          avatar: item.post.author.avatar,
+        },
+        resharedBy: {
+          did: item.reason.by.did,
+          handle: item.reason.by.handle,
+          displayName:
+            item.reason.by.displayName || item.reason.by.handle,
+          avatar: item.reason.by.avatar,
+        },
+      });
+    }
+
+    // Sort by engagement rank (most popular first)
+    return UpdateEngine.sortByRank(
+      reshares.map((r) => ({ ...r, metrics: r.post.metrics }))
+    ).map(({ metrics: _m, ...rest }) => rest as ReshareItem);
+  }
+
+  /**
+   * Fetch notifications within a time window.
+   */
+  async fetchNotifications(
+    window: TimeWindow,
+    onProgress?: ProgressCallback
+  ): Promise<NotificationItem[]> {
+    const items: NotificationItem[] = [];
+    let cursor: string | undefined;
+
+    for (let page = 0; page < 10; page++) {
+      const res = await this.agent.listNotifications({
+        limit: 50,
+        cursor,
+      });
+
+      if (!res.data.notifications || res.data.notifications.length === 0)
+        break;
+      onProgress?.(page + 1);
+
+      let allOlder = true;
+      for (const n of res.data.notifications) {
+        const indexed = new Date(n.indexedAt);
+        if (indexed < window.start) continue;
+        if (indexed > window.end) {
+          allOlder = false;
+          continue;
+        }
+        allOlder = false;
+
+        const record = n.record as { text?: string } | undefined;
+        items.push({
+          uri: n.uri,
+          cid: n.cid,
+          reason: n.reason,
+          author: {
+            did: n.author.did,
+            handle: n.author.handle,
+            displayName:
+              (n.author.displayName as string) || n.author.handle,
+            avatar: n.author.avatar as string | undefined,
+          },
+          indexedAt: n.indexedAt,
+          text: record?.text ?? "",
+          subjectUri: (n as { reasonSubject?: string }).reasonSubject,
+        });
+      }
+
+      if (allOlder || !res.data.cursor) break;
+      cursor = res.data.cursor;
+    }
+
+    // Sort newest first
+    items.sort(
+      (a, b) =>
+        new Date(b.indexedAt).getTime() - new Date(a.indexedAt).getTime()
+    );
+
+    return items;
+  }
+
+  /**
+   * Full pipeline: fetch + aggregate + reshares.
+   */
+  async getSnapshot(
+    window: TimeWindow,
+    onProgress?: ProgressCallback
+  ): Promise<SnapshotResult> {
     debugStore.setWindow(window);
-    const posts = await this.fetchTimelineWindow(window);
+    const posts = await this.fetchTimelineWindow(window, onProgress);
     const authors = UpdateEngine.aggregate(posts);
+    const reshares = UpdateEngine.processReshares(posts);
     debugStore.setSnapshot(authors);
-    return authors;
+    return { authors, reshares };
   }
 }
