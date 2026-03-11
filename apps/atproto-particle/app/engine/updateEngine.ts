@@ -45,7 +45,11 @@ export class UpdateEngine {
     const posts: FeedViewPost[] = [];
     let cursor: string | undefined;
 
-    // Paginate backwards until we pass the start boundary
+    // Paginate through the timeline, collecting posts within the window.
+    // The feed is ordered by indexing time, NOT by createdAt. Reposts carry
+    // the *original* post's createdAt which can be much older, so a single
+    // old createdAt must not stop pagination. We only stop when an entire
+    // page falls before the window start.
     for (let page = 0; page < 20; page++) {
       const res = await this.agent.getTimeline({
         limit: 50,
@@ -54,23 +58,23 @@ export class UpdateEngine {
 
       if (!res.data.feed || res.data.feed.length === 0) break;
 
-      let passedStart = false;
+      let olderCount = 0;
       for (const item of res.data.feed) {
         const createdAt = new Date(
           (item.post.record as { createdAt?: string }).createdAt ?? ""
         );
 
-        if (createdAt < window.start) {
-          passedStart = true;
-          break;
+        if (createdAt >= window.start && createdAt <= window.end) {
+          posts.push(item as unknown as FeedViewPost);
         }
 
-        if (createdAt <= window.end) {
-          posts.push(item as unknown as FeedViewPost);
+        if (createdAt < window.start) {
+          olderCount++;
         }
       }
 
-      if (passedStart || !res.data.cursor) break;
+      // Stop only when every item on the page is older than the window start
+      if (olderCount === res.data.feed.length || !res.data.cursor) break;
       cursor = res.data.cursor;
     }
 

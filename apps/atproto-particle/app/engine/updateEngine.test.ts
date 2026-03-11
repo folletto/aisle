@@ -11,7 +11,8 @@ function makePost(
     reposts?: number;
     likes?: number;
     quotes?: number;
-  } = {}
+  } = {},
+  createdAt?: string
 ) {
   return {
     post: {
@@ -25,7 +26,7 @@ function makePost(
       },
       record: {
         text,
-        createdAt: new Date().toISOString(),
+        createdAt: createdAt ?? new Date().toISOString(),
       },
       replyCount: metrics.replies ?? 0,
       repostCount: metrics.reposts ?? 0,
@@ -175,6 +176,82 @@ describe("UpdateEngine.extractMetrics", () => {
       likes: 0,
       quotes: 0,
     });
+  });
+});
+
+describe("UpdateEngine.fetchTimelineWindow", () => {
+  it("does not stop early when a repost has an old createdAt", async () => {
+    // Simulate a feed page where a repost (old createdAt) appears between
+    // two posts that are within the window. The engine should collect both
+    // in-window posts and not bail on the old one.
+    const windowStart = new Date("2025-03-15T12:00:00Z");
+    const windowEnd = new Date("2025-03-15T20:00:00Z");
+
+    const feedPage = [
+      makePost("did:1", "alice", "Alice", "In window 1", {}, "2025-03-15T18:00:00Z"),
+      // Repost of an old post — createdAt is well before window.start
+      makePost("did:2", "bob", "Bob", "Old repost", {}, "2025-03-10T08:00:00Z"),
+      makePost("did:3", "charlie", "Charlie", "In window 2", {}, "2025-03-15T14:00:00Z"),
+    ];
+
+    const mockAgent = {
+      getTimeline: async () => ({
+        data: { feed: feedPage, cursor: undefined },
+      }),
+    } as any;
+
+    const engine = new UpdateEngine(mockAgent);
+    const posts = await engine.fetchTimelineWindow({
+      start: windowStart,
+      end: windowEnd,
+    });
+
+    // Should include both in-window posts, skipping the old repost
+    expect(posts).toHaveLength(2);
+    expect(posts.map((p) => p.post.record.text)).toContain("In window 1");
+    expect(posts.map((p) => p.post.record.text)).toContain("In window 2");
+  });
+
+  it("stops paginating when entire page is older than window", async () => {
+    const windowStart = new Date("2025-03-15T12:00:00Z");
+    const windowEnd = new Date("2025-03-15T20:00:00Z");
+
+    let callCount = 0;
+    const mockAgent = {
+      getTimeline: async ({ cursor }: { cursor?: string }) => {
+        callCount++;
+        if (!cursor) {
+          return {
+            data: {
+              feed: [
+                makePost("did:1", "alice", "Alice", "In window", {}, "2025-03-15T15:00:00Z"),
+              ],
+              cursor: "page2",
+            },
+          };
+        }
+        // Second page: all posts older than window
+        return {
+          data: {
+            feed: [
+              makePost("did:2", "bob", "Bob", "Old 1", {}, "2025-03-14T10:00:00Z"),
+              makePost("did:3", "charlie", "Charlie", "Old 2", {}, "2025-03-14T08:00:00Z"),
+            ],
+            cursor: "page3",
+          },
+        };
+      },
+    } as any;
+
+    const engine = new UpdateEngine(mockAgent);
+    const posts = await engine.fetchTimelineWindow({
+      start: windowStart,
+      end: windowEnd,
+    });
+
+    expect(posts).toHaveLength(1);
+    // Should have stopped after page 2, not fetched page 3
+    expect(callCount).toBe(2);
   });
 });
 
