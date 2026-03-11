@@ -107,6 +107,91 @@ export function resolveTimeWindow(
 }
 
 /**
+ * Get the previous time window (one slot back).
+ * Returns null if it would go beyond 24h before now.
+ */
+export function getPreviousWindow(
+  intervals: TimeInterval[],
+  current: TimeWindow,
+  now: Date = new Date()
+): TimeWindow | null {
+  const sorted = sortIntervals(intervals);
+  const n = sorted.length;
+
+  // Previous window ends where the current one starts
+  const newEnd = new Date(current.start);
+  const endMinutes = newEnd.getHours() * 60 + newEnd.getMinutes();
+
+  // Find the matching interval index
+  let endIdx = -1;
+  for (let i = 0; i < n; i++) {
+    if (toMinutes(sorted[i]) === endMinutes) {
+      endIdx = i;
+      break;
+    }
+  }
+  if (endIdx === -1) return null;
+
+  // Start is the interval before endIdx
+  const startInterval =
+    endIdx === 0 ? sorted[n - 1] : sorted[endIdx - 1];
+  const newStart = new Date(newEnd);
+  if (endIdx === 0) {
+    newStart.setDate(newStart.getDate() - 1);
+  }
+  newStart.setHours(startInterval.hour, startInterval.minute, 0, 0);
+
+  // Don't go beyond 24h
+  if (now.getTime() - newStart.getTime() > 24 * 60 * 60 * 1000) {
+    return null;
+  }
+
+  return { start: newStart, end: newEnd };
+}
+
+/**
+ * Get the next time window (one slot forward).
+ * Returns null if it would go past the latest completed window.
+ */
+export function getNextWindow(
+  intervals: TimeInterval[],
+  current: TimeWindow,
+  now: Date = new Date()
+): TimeWindow | null {
+  const sorted = sortIntervals(intervals);
+  const n = sorted.length;
+
+  // Next window starts where the current one ends
+  const newStart = new Date(current.end);
+  const startMinutes = newStart.getHours() * 60 + newStart.getMinutes();
+
+  // Find matching interval index
+  let startIdx = -1;
+  for (let i = 0; i < n; i++) {
+    if (toMinutes(sorted[i]) === startMinutes) {
+      startIdx = i;
+      break;
+    }
+  }
+  if (startIdx === -1) return null;
+
+  // End is the interval after startIdx
+  const endInterval =
+    startIdx === n - 1 ? sorted[0] : sorted[startIdx + 1];
+  const newEnd = new Date(newStart);
+  if (startIdx === n - 1) {
+    newEnd.setDate(newEnd.getDate() + 1);
+  }
+  newEnd.setHours(endInterval.hour, endInterval.minute, 0, 0);
+
+  // Don't go past the latest completed window
+  const latest = resolveTimeWindow(intervals, now);
+  if (newEnd.getTime() > latest.end.getTime()) return null;
+
+  return { start: newStart, end: newEnd };
+}
+
+/**
  * Find the next upcoming interval from now.
  */
 export function getNextInterval(

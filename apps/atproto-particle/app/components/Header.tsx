@@ -1,4 +1,4 @@
-import { RefreshCw, Settings } from "lucide-react";
+import { ChevronLeft, ChevronRight, RefreshCw, Settings } from "lucide-react";
 import { Link } from "react-router";
 import { formatInterval, getNextInterval } from "~/engine/timeWindows";
 import type { TimeWindow, TimeInterval } from "~/types";
@@ -8,6 +8,8 @@ interface HeaderProps {
   window?: TimeWindow | null;
   intervals?: TimeInterval[];
   onRefresh?: () => void;
+  onPrev?: (() => void) | null;
+  onNext?: (() => void) | null;
   isLoading?: boolean;
 }
 
@@ -15,6 +17,8 @@ export default function Header({
   window: timeWindow,
   intervals,
   onRefresh,
+  onPrev,
+  onNext,
   isLoading,
 }: HeaderProps) {
   const windowLabel = timeWindow
@@ -34,7 +38,27 @@ export default function Header({
         </Link>
         {windowLabel && (
           <span className={styles.window}>
+            {onPrev && (
+              <button
+                onClick={onPrev}
+                className={styles.chevronBtn}
+                aria-label="Previous window"
+                disabled={isLoading}
+              >
+                <ChevronLeft size={16} />
+              </button>
+            )}
             {windowLabel}
+            {onNext && (
+              <button
+                onClick={onNext}
+                className={styles.chevronBtn}
+                aria-label="Next window"
+                disabled={isLoading}
+              >
+                <ChevronRight size={16} />
+              </button>
+            )}
             {onRefresh && (
               <button
                 onClick={onRefresh}
