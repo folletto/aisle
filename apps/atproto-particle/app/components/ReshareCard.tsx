@@ -1,5 +1,6 @@
 import { Heart, MessageCircle, Repeat2, Quote } from "lucide-react";
 import type { ReshareItem } from "~/types";
+import { linkifyText } from "~/utils/linkify";
 import { postLink } from "~/utils/postLink";
 import styles from "./AggregatedCard.module.css";
 
@@ -41,7 +42,7 @@ export default function ReshareCard({ item }: ReshareCardProps) {
       </div>
 
       <div className={styles.body}>
-        <p className={styles.text}>{post.text}</p>
+        <p className={styles.text}>{linkifyText(post.text)}</p>
         {postTime && (
           <a
             href={postLink(post.uri, author.handle)}

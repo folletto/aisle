@@ -1,5 +1,6 @@
 import { Heart, MessageCircle, Repeat2, Quote } from "lucide-react";
 import type { AggregatedAuthor } from "~/types";
+import { linkifyText } from "~/utils/linkify";
 import { postLink } from "~/utils/postLink";
 import styles from "./AggregatedCard.module.css";
 
@@ -37,7 +38,7 @@ export default function AggregatedCard({ author }: AggregatedCardProps) {
       </div>
 
       <div className={styles.body}>
-        <p className={styles.text}>{topPost.text}</p>
+        <p className={styles.text}>{linkifyText(topPost.text)}</p>
         {postTime && (
           <a
             href={postLink(topPost.uri, author.handle)}

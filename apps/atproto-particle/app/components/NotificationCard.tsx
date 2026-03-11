@@ -7,6 +7,7 @@ import {
   AtSign,
 } from "lucide-react";
 import type { NotificationItem } from "~/types";
+import { linkifyText } from "~/utils/linkify";
 import styles from "./NotificationCard.module.css";
 
 const REASON_CONFIG: Record<
@@ -59,7 +60,7 @@ export default function NotificationCard({ item }: NotificationCardProps) {
             </span>
           </div>
           <span className={styles.handle}>@{item.author.handle}</span>
-          {item.text && <p className={styles.text}>{item.text}</p>}
+          {item.text && <p className={styles.text}>{linkifyText(item.text)}</p>}
         </div>
         <time className={styles.time}>{time}</time>
       </div>
