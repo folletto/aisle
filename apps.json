@@ -40,6 +40,17 @@
         "transport",
         "london"
       ]
+    },
+    {
+      "name": "AT Particle",
+      "description": "Bluesky timeline reader that groups posts by author in time windows",
+      "folder": "atproto-particle",
+      "url": "",
+      "siteId": "",
+      "tags": [
+        "social",
+        "bluesky"
+      ]
     }
   ]
 }
