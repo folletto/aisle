@@ -1,1 +1,0 @@
-import{o as t}from"./chunk-LFPYN7LY-0BfsW2AI.js";const a="_layout_352pg_1",s="_container_352pg_7",o={layout:a,container:s};function e({children:n}){return t.jsx("div",{className:o.layout,children:t.jsx("div",{className:o.container,children:n})})}export{e as L};
