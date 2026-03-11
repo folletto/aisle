@@ -5,6 +5,7 @@ import type {
   ProcessedPost,
   TimeWindow,
 } from "~/types";
+import { debugStore } from "~/debug/debugStore";
 
 interface FeedViewPost {
   post: {
@@ -43,7 +44,9 @@ export class UpdateEngine {
    */
   async fetchTimelineWindow(window: TimeWindow): Promise<FeedViewPost[]> {
     const posts: FeedViewPost[] = [];
+    const allRaw: FeedViewPost[] = [];
     let cursor: string | undefined;
+    let pagesLoaded = 0;
 
     // Paginate through the timeline, collecting posts within the window.
     // The feed is ordered by indexing time, NOT by createdAt. Reposts carry
@@ -57,15 +60,19 @@ export class UpdateEngine {
       });
 
       if (!res.data.feed || res.data.feed.length === 0) break;
+      pagesLoaded++;
 
       let olderCount = 0;
       for (const item of res.data.feed) {
+        const feedPost = item as unknown as FeedViewPost;
+        allRaw.push(feedPost);
+
         const createdAt = new Date(
           (item.post.record as { createdAt?: string }).createdAt ?? ""
         );
 
         if (createdAt >= window.start && createdAt <= window.end) {
-          posts.push(item as unknown as FeedViewPost);
+          posts.push(feedPost);
         }
 
         if (createdAt < window.start) {
@@ -77,6 +84,10 @@ export class UpdateEngine {
       if (olderCount === res.data.feed.length || !res.data.cursor) break;
       cursor = res.data.cursor;
     }
+
+    // Store debug data
+    debugStore.setPagesLoaded(pagesLoaded);
+    debugStore.setRawPosts(allRaw.map((p) => debugStore.toRawPost(p)));
 
     return posts;
   }
@@ -183,7 +194,10 @@ export class UpdateEngine {
    * Full pipeline: fetch + aggregate.
    */
   async getSnapshot(window: TimeWindow): Promise<AggregatedAuthor[]> {
+    debugStore.setWindow(window);
     const posts = await this.fetchTimelineWindow(window);
-    return UpdateEngine.aggregate(posts);
+    const authors = UpdateEngine.aggregate(posts);
+    debugStore.setSnapshot(authors);
+    return authors;
   }
 }

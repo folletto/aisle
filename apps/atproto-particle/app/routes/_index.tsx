@@ -7,6 +7,7 @@ import MainList from "~/components/MainList";
 import { resolveTimeWindow } from "~/engine/timeWindows";
 import { UpdateEngine } from "~/engine/updateEngine";
 import { settingsDb } from "~/db/settingsDb";
+import { debugStore } from "~/debug/debugStore";
 import type { AggregatedAuthor, TimeWindow } from "~/types";
 
 export default function IndexRoute() {
@@ -26,6 +27,9 @@ export default function IndexRoute() {
     setError(null);
 
     try {
+      debugStore.setIntervals(intervals);
+      debugStore.setSessionHandle(session?.handle ?? null);
+
       const window = resolveTimeWindow(intervals);
       setTimeWindow(window);
 

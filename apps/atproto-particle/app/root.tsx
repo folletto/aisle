@@ -5,6 +5,7 @@ import {
   Scripts,
   ScrollRestoration,
 } from "react-router";
+import { useEffect } from "react";
 import { AuthProvider } from "~/context/AuthContext";
 import "./app.css";
 
@@ -32,6 +33,10 @@ export function Layout({ children }: { children: React.ReactNode }) {
 }
 
 export default function App() {
+  useEffect(() => {
+    import("~/debug/consoleApi").then(({ initConsoleApi }) => initConsoleApi());
+  }, []);
+
   return (
     <AuthProvider>
       <Outlet />

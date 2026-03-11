@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from "react";
 import { useNavigate } from "react-router";
-import { ArrowLeft, Plus, Trash2 } from "lucide-react";
+import { ArrowLeft, Bug, Plus, Trash2 } from "lucide-react";
 import { Link } from "react-router";
 import { useAuth } from "~/context/AuthContext";
 import Button from "~/components/Button";
@@ -135,6 +135,17 @@ export default function SettingsRoute() {
           <Button variant="danger" onClick={handleLogout}>
             Sign Out
           </Button>
+        </section>
+
+        <section className={styles.section}>
+          <h2 className={styles.sectionTitle}>Debug</h2>
+          <p className={styles.sectionDesc}>
+            View raw data and generate a report for troubleshooting.
+          </p>
+          <Link to="/debug" className={styles.debugLink}>
+            <Bug size={16} />
+            Debug Report
+          </Link>
         </section>
       </div>
     </Layout>
