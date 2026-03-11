@@ -20,73 +20,79 @@ export default function AggregatedCard({ author }: AggregatedCardProps) {
 
   return (
     <article className={styles.card}>
-      <div className={styles.top}>
-        {author.avatar ? (
-          <img
-            src={author.avatar}
-            alt=""
-            className={styles.avatar}
-            loading="lazy"
-          />
-        ) : (
-          <div className={styles.avatarPlaceholder} />
-        )}
-        <div className={styles.authorInfo}>
-          <span className={styles.displayName}>{author.displayName}</span>
-          <span className={styles.handle}>@{author.handle}</span>
+      <div className={styles.cardLayout}>
+        <div className={styles.avatarCol}>
+          {author.avatar ? (
+            <img
+              src={author.avatar}
+              alt=""
+              className={styles.avatar}
+              loading="lazy"
+            />
+          ) : (
+            <div className={styles.avatarPlaceholder} />
+          )}
         </div>
-      </div>
 
-      <div className={styles.body}>
-        <p className={styles.text}>{linkifyText(topPost.text)}</p>
-        {postTime && (
-          <a
-            href={postLink(topPost.uri, author.handle)}
-            target="_blank"
-            rel="noopener noreferrer"
-            className={styles.timeLink}
-          >
-            {postTime}
-          </a>
-        )}
-      </div>
+        <div className={styles.contentCol}>
+          <div className={styles.authorInfo}>
+            <span className={styles.displayName}>{author.displayName}</span>
+            <span className={styles.handle}>@{author.handle}</span>
+          </div>
 
-      <div className={styles.metrics}>
-        <span className={styles.metric} title="Replies">
-          <MessageCircle size={14} />
-          {topPost.metrics.replies}
-        </span>
-        <span className={styles.metric} title="Reposts">
-          <Repeat2 size={14} />
-          {topPost.metrics.reposts}
-        </span>
-        <span className={styles.metric} title="Quotes">
-          <Quote size={14} />
-          {topPost.metrics.quotes}
-        </span>
-        <span className={styles.metric} title="Likes">
-          <Heart size={14} />
-          {topPost.metrics.likes}
-        </span>
-      </div>
-
-      {(topPost.threadCount > 0 || otherPosts > 0) && (
-        <>
-          <div className={styles.separator} />
-          <div className={styles.counters}>
-            {topPost.threadCount > 0 && (
-              <span className={styles.counter}>
-                {topPost.threadCount} in thread
-              </span>
-            )}
-            {otherPosts > 0 && (
-              <span className={styles.counter}>
-                +{otherPosts} other post{otherPosts > 1 ? "s" : ""} this session
-              </span>
+          <div className={styles.body}>
+            <p className={styles.text}>{linkifyText(topPost.text)}</p>
+            {postTime && (
+              <a
+                href={postLink(topPost.uri, author.handle)}
+                target="_blank"
+                rel="noopener noreferrer"
+                className={styles.timeLink}
+              >
+                {postTime}
+              </a>
             )}
           </div>
-        </>
-      )}
+
+          <div className={styles.metrics}>
+            <span className={styles.metric} title="Replies">
+              <MessageCircle size={14} />
+              {topPost.metrics.replies}
+            </span>
+            <span className={styles.metric} title="Reposts">
+              <Repeat2 size={14} />
+              {topPost.metrics.reposts}
+            </span>
+            <span className={styles.metric} title="Quotes">
+              <Quote size={14} />
+              {topPost.metrics.quotes}
+            </span>
+            <span className={styles.metric} title="Likes">
+              <Heart size={14} />
+              {topPost.metrics.likes}
+            </span>
+          </div>
+
+          {(topPost.threadCount > 0 || otherPosts > 0) && (
+            <>
+              <div className={styles.separator} />
+              <div className={styles.counters}>
+                {topPost.threadCount > 0 && (
+                  <span className={styles.counter}>
+                    {topPost.threadCount} in thread
+                  </span>
+                )}
+                {otherPosts > 0 && (
+                  <span className={styles.counter}>
+                    +{otherPosts} other post{otherPosts > 1 ? "s" : ""} this
+                    session
+                  </span>
+                )}
+              </div>
+            </>
+          )}
+        </div>
+      </div>
     </article>
   );
 }

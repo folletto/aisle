@@ -7,11 +7,14 @@
   border-bottom: none;
 }
 
-.top {
+.cardLayout {
   display: flex;
-  align-items: center;
   gap: 12px;
-  margin-bottom: 10px;
+  align-items: flex-start;
+}
+
+.avatarCol {
+  flex-shrink: 0;
 }
 
 .avatar {
@@ -28,9 +31,15 @@
   background: var(--color-border);
 }
 
+.contentCol {
+  flex: 1;
+  min-width: 0;
+}
+
 .authorInfo {
   display: flex;
   flex-direction: column;
+  margin-bottom: 4px;
 }
 
 .displayName {

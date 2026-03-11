@@ -24,54 +24,59 @@ export default function ReshareCard({ item }: ReshareCardProps) {
         <span>Reshared by {resharedBy.displayName}</span>
       </div>
 
-      <div className={styles.top}>
-        {author.avatar ? (
-          <img
-            src={author.avatar}
-            alt=""
-            className={styles.avatar}
-            loading="lazy"
-          />
-        ) : (
-          <div className={styles.avatarPlaceholder} />
-        )}
-        <div className={styles.authorInfo}>
-          <span className={styles.displayName}>{author.displayName}</span>
-          <span className={styles.handle}>@{author.handle}</span>
+      <div className={styles.cardLayout}>
+        <div className={styles.avatarCol}>
+          {author.avatar ? (
+            <img
+              src={author.avatar}
+              alt=""
+              className={styles.avatar}
+              loading="lazy"
+            />
+          ) : (
+            <div className={styles.avatarPlaceholder} />
+          )}
         </div>
-      </div>
 
-      <div className={styles.body}>
-        <p className={styles.text}>{linkifyText(post.text)}</p>
-        {postTime && (
-          <a
-            href={postLink(post.uri, author.handle)}
-            target="_blank"
-            rel="noopener noreferrer"
-            className={styles.timeLink}
-          >
-            {postTime}
-          </a>
-        )}
-      </div>
+        <div className={styles.contentCol}>
+          <div className={styles.authorInfo}>
+            <span className={styles.displayName}>{author.displayName}</span>
+            <span className={styles.handle}>@{author.handle}</span>
+          </div>
 
-      <div className={styles.metrics}>
-        <span className={styles.metric} title="Replies">
-          <MessageCircle size={14} />
-          {post.metrics.replies}
-        </span>
-        <span className={styles.metric} title="Reposts">
-          <Repeat2 size={14} />
-          {post.metrics.reposts}
-        </span>
-        <span className={styles.metric} title="Quotes">
-          <Quote size={14} />
-          {post.metrics.quotes}
-        </span>
-        <span className={styles.metric} title="Likes">
-          <Heart size={14} />
-          {post.metrics.likes}
-        </span>
+          <div className={styles.body}>
+            <p className={styles.text}>{linkifyText(post.text)}</p>
+            {postTime && (
+              <a
+                href={postLink(post.uri, author.handle)}
+                target="_blank"
+                rel="noopener noreferrer"
+                className={styles.timeLink}
+              >
+                {postTime}
+              </a>
+            )}
+          </div>
+
+          <div className={styles.metrics}>
+            <span className={styles.metric} title="Replies">
+              <MessageCircle size={14} />
+              {post.metrics.replies}
+            </span>
+            <span className={styles.metric} title="Reposts">
+              <Repeat2 size={14} />
+              {post.metrics.reposts}
+            </span>
+            <span className={styles.metric} title="Quotes">
+              <Quote size={14} />
+              {post.metrics.quotes}
+            </span>
+            <span className={styles.metric} title="Likes">
+              <Heart size={14} />
+              {post.metrics.likes}
+            </span>
+          </div>
+        </div>
       </div>
     </article>
   );
