@@ -8,7 +8,7 @@ export default function LoggedOutRoute() {
       <div className={styles.page}>
         <h1 className={styles.title}>Signed Out</h1>
         <p className={styles.message}>
-          You have been signed out of AT Particle.
+          You have been signed out of Particle.
         </p>
         <Link to="/login" className={styles.link}>
           Sign in again

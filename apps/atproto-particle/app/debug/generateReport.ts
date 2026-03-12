@@ -10,7 +10,7 @@ export function generateDebugReport(): string {
   const s = debugStore.get();
   const lines: string[] = [];
 
-  lines.push("# AT Particle Debug Report");
+  lines.push("# Particle Debug Report");
   lines.push("");
   lines.push(`Generated: ${new Date().toISOString()}`);
   lines.push("");

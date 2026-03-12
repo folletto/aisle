@@ -1,4 +1,4 @@
-import { ChevronLeft, ChevronRight, RefreshCw, Settings } from "lucide-react";
+import { ChevronLeft, ChevronRight, MessageSquareQuote, RefreshCw, Settings } from "lucide-react";
 import { Link } from "react-router";
 import { formatInterval, getNextInterval } from "~/engine/timeWindows";
 import type { TimeWindow, TimeInterval } from "~/types";
@@ -34,7 +34,8 @@ export default function Header({
     <header className={styles.header}>
       <div className={styles.left}>
         <Link to="/" className={styles.title}>
-          AT Particle
+          <MessageSquareQuote size={20} />
+          Particle
         </Link>
         {windowLabel && (
           <span className={styles.window}>

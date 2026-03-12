@@ -40,7 +40,7 @@ export default function LoginRoute() {
     <Layout>
       <div className={styles.page}>
         <div className={styles.card}>
-          <h1 className={styles.title}>AT Particle</h1>
+          <h1 className={styles.title}>Particle</h1>
           <p className={styles.subtitle}>
             Sign in with your Bluesky account
           </p>

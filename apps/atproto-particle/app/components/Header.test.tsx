@@ -10,7 +10,7 @@ describe("Header", () => {
         <Header />
       </MemoryRouter>
     );
-    expect(screen.getByText("AT Particle")).toBeInTheDocument();
+    expect(screen.getByText("Particle")).toBeInTheDocument();
   });
 
   it("renders the time window when provided", () => {

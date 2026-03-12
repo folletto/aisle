@@ -69,7 +69,7 @@ const api = {
     const s = debugStore.get();
     const win = s.window;
     console.log(
-      "%cAT Particle Debug",
+      "%cParticle Debug",
       "font-weight:bold; font-size:14px"
     );
     console.log(`  Session:     ${s.sessionHandle ?? "(not logged in)"}`);
@@ -88,7 +88,7 @@ const api = {
 
 function printHelp() {
   console.log(
-    "%cAT Particle Console API",
+    "%cParticle Console API",
     "font-weight:bold; font-size:14px; color:#1185fe"
   );
   console.log(

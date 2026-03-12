@@ -17,9 +17,9 @@ export function Layout({ children }: { children: React.ReactNode }) {
         <meta name="viewport" content="width=device-width, initial-scale=1" />
         <meta
           name="description"
-          content="AT Particle - Your Bluesky timeline, distilled"
+          content="Particle - Your Bluesky timeline, distilled"
         />
-        <title>AT Particle</title>
+        <title>Particle</title>
         <Meta />
         <Links />
       </head>
