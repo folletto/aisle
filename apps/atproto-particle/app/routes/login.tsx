@@ -50,7 +50,7 @@ export default function LoginRoute() {
             it's an experiment to have healthier consumption of social media.
             The client works by reading your timeline at time intervals you
             define and surfaces the top message for each of your followers. It
-            also separates reshares.
+            also separates reshares. It runs 100% locally, no data shared.
           </p>
           <p className={styles.subtitle}>
             Sign in with your Bluesky account
