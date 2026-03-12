@@ -2,6 +2,7 @@ import { Heart, MessageCircle, Repeat2, Quote } from "lucide-react";
 import type { AggregatedAuthor } from "~/types";
 import { linkifyText } from "~/utils/linkify";
 import { postLink } from "~/utils/postLink";
+import EmbedView from "./EmbedView";
 import styles from "./AggregatedCard.module.css";
 
 interface AggregatedCardProps {
@@ -53,6 +54,8 @@ export default function AggregatedCard({ author }: AggregatedCardProps) {
               </a>
             )}
           </div>
+
+          {topPost.embed && <EmbedView embed={topPost.embed} />}
 
           <div className={styles.metrics}>
             <span className={styles.metric} title="Replies">

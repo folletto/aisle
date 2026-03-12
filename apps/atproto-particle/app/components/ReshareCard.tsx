@@ -2,6 +2,7 @@ import { Heart, MessageCircle, Repeat2, Quote } from "lucide-react";
 import type { ReshareItem } from "~/types";
 import { linkifyText } from "~/utils/linkify";
 import { postLink } from "~/utils/postLink";
+import EmbedView from "./EmbedView";
 import styles from "./AggregatedCard.module.css";
 
 interface ReshareCardProps {
@@ -57,6 +58,8 @@ export default function ReshareCard({ item }: ReshareCardProps) {
               </a>
             )}
           </div>
+
+          {post.embed && <EmbedView embed={post.embed} />}
 
           <div className={styles.metrics}>
             <span className={styles.metric} title="Replies">
