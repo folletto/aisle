@@ -18,3 +18,12 @@
   font-size: 13px;
   color: var(--color-text-muted);
 }
+
+.footer {
+  display: flex;
+  justify-content: space-between;
+  padding: 14px 20px;
+  font-size: 12px;
+  color: var(--color-text-muted);
+  border-top: 1px solid var(--color-border-light);
+}

@@ -12,6 +12,22 @@ interface MainListProps {
   notifications: NotificationItem[];
   isLoading: boolean;
   progress?: string | null;
+  loadDurationMs?: number;
+}
+
+function formatDuration(ms: number): string {
+  if (ms < 1000) return `${ms}ms`;
+  return `${(ms / 1000).toFixed(1)}s`;
+}
+
+function ListFooter({ count, label, durationMs }: { count: number; label: string; durationMs: number }) {
+  if (count === 0) return null;
+  return (
+    <div className={styles.footer}>
+      <span>{count} {label}</span>
+      {durationMs > 0 && <span>Loaded in {formatDuration(durationMs)}</span>}
+    </div>
+  );
 }
 
 export default function MainList({
@@ -21,6 +37,7 @@ export default function MainList({
   notifications,
   isLoading,
   progress,
+  loadDurationMs = 0,
 }: MainListProps) {
   if (isLoading) {
     return (
@@ -44,6 +61,11 @@ export default function MainList({
         {authors.map((author) => (
           <AggregatedCard key={author.did} author={author} />
         ))}
+        <ListFooter
+          count={authors.length}
+          label={authors.length === 1 ? "author" : "authors"}
+          durationMs={loadDurationMs}
+        />
       </div>
     );
   }
@@ -61,6 +83,11 @@ export default function MainList({
         {reshares.map((item, i) => (
           <ReshareCard key={`${item.post.uri}-${item.resharedBy.did}-${i}`} item={item} />
         ))}
+        <ListFooter
+          count={reshares.length}
+          label={reshares.length === 1 ? "reshare" : "reshares"}
+          durationMs={loadDurationMs}
+        />
       </div>
     );
   }
@@ -78,6 +105,11 @@ export default function MainList({
       {notifications.map((item, i) => (
         <NotificationCard key={`${item.uri}-${i}`} item={item} />
       ))}
+      <ListFooter
+        count={notifications.length}
+        label={notifications.length === 1 ? "notification" : "notifications"}
+        durationMs={loadDurationMs}
+      />
     </div>
   );
 }

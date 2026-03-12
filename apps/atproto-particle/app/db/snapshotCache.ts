@@ -9,6 +9,7 @@ const CACHE_KEY = "atparticle_snapshot_cache";
 
 interface CachedEntry {
   fetchedAt: string;
+  loadDurationMs: number;
   authors: AggregatedAuthor[];
   reshares: ReshareItem[];
   notifications: NotificationItem[];
@@ -45,6 +46,7 @@ export const snapshotCache = {
     authors: AggregatedAuthor[];
     reshares: ReshareItem[];
     notifications: NotificationItem[];
+    loadDurationMs: number;
   } | null {
     const map = readAll();
     const entry = map[windowKey(window)];
@@ -53,6 +55,7 @@ export const snapshotCache = {
       authors: entry.authors,
       reshares: entry.reshares,
       notifications: entry.notifications,
+      loadDurationMs: entry.loadDurationMs ?? 0,
     };
   },
 
@@ -60,11 +63,13 @@ export const snapshotCache = {
     window: TimeWindow,
     authors: AggregatedAuthor[],
     reshares: ReshareItem[],
-    notifications: NotificationItem[]
+    notifications: NotificationItem[],
+    loadDurationMs: number
   ): void {
     const map = readAll();
     map[windowKey(window)] = {
       fetchedAt: new Date().toISOString(),
+      loadDurationMs,
       authors,
       reshares,
       notifications,

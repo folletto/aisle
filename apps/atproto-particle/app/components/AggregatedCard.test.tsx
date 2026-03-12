@@ -56,7 +56,7 @@ describe("AggregatedCard", () => {
     render(<AggregatedCard author={mockAuthor} />);
     // 4 total - 1 top post = 3 other posts
     expect(
-      screen.getByText("+3 other posts this session")
+      screen.getByText("3 more posts in this snapshot")
     ).toBeInTheDocument();
   });
 

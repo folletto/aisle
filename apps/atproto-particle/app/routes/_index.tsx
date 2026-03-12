@@ -31,6 +31,7 @@ export default function IndexRoute() {
   const [error, setError] = useState<string | null>(null);
   const [timeWindow, setTimeWindow] = useState<TimeWindow | null>(null);
   const [progress, setProgress] = useState<string | null>(null);
+  const [loadDurationMs, setLoadDurationMs] = useState<number>(0);
   const [activeTab, setActiveTab] = useState<TabId>("snapshot");
 
   const intervals = settingsDb.getIntervals();
@@ -55,6 +56,7 @@ export default function IndexRoute() {
             setAuthors(cached.authors);
             setReshares(cached.reshares);
             setNotifications(cached.notifications);
+            setLoadDurationMs(cached.loadDurationMs);
             debugStore.setSnapshot(cached.authors);
             setIsLoading(false);
             return;
@@ -62,6 +64,7 @@ export default function IndexRoute() {
         }
 
         const engine = new UpdateEngine(agent);
+        const startTime = performance.now();
 
         // Fetch timeline + notifications in parallel
         setProgress("Fetching timeline...");
@@ -78,9 +81,12 @@ export default function IndexRoute() {
           }),
         ]);
 
+        const durationMs = Math.round(performance.now() - startTime);
+
         setAuthors(snapshotResult.authors);
         setReshares(snapshotResult.reshares);
         setNotifications(notifs);
+        setLoadDurationMs(durationMs);
         setProgress(null);
 
         // Cache the result
@@ -88,7 +94,8 @@ export default function IndexRoute() {
           targetWindow,
           snapshotResult.authors,
           snapshotResult.reshares,
-          notifs
+          notifs,
+          durationMs
         );
       } catch (err) {
         setError(
@@ -205,6 +212,7 @@ export default function IndexRoute() {
           notifications={notifications}
           isLoading={isLoading}
           progress={progress}
+          loadDurationMs={loadDurationMs}
         />
       )}
     </Layout>
