@@ -1,0 +1,123 @@
+.card {
+  border-bottom: 1px solid var(--color-border-light);
+  padding: 16px 20px;
+}
+
+.card:last-child {
+  border-bottom: none;
+}
+
+.cardLayout {
+  display: flex;
+  gap: 12px;
+  align-items: flex-start;
+}
+
+.avatarCol {
+  flex-shrink: 0;
+}
+
+.avatar {
+  width: 42px;
+  height: 42px;
+  border-radius: 50%;
+  object-fit: cover;
+}
+
+.avatarPlaceholder {
+  width: 42px;
+  height: 42px;
+  border-radius: 50%;
+  background: var(--color-border);
+}
+
+.contentCol {
+  flex: 1;
+  min-width: 0;
+}
+
+.authorInfo {
+  display: flex;
+  flex-direction: column;
+  margin-bottom: 4px;
+}
+
+.displayName {
+  font-weight: 600;
+  font-size: 15px;
+  line-height: 1.3;
+}
+
+.handle {
+  font-size: 13px;
+  color: var(--color-text-muted);
+}
+
+.body {
+  margin-bottom: 10px;
+}
+
+.text {
+  font-size: 15px;
+  line-height: 1.55;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+.time {
+  display: block;
+  margin-top: 4px;
+  font-size: 12px;
+  color: var(--color-text-muted);
+}
+
+.timeLink {
+  display: block;
+  margin-top: 4px;
+  font-size: 12px;
+  color: var(--color-text-muted);
+  text-decoration: none;
+}
+
+.timeLink:hover {
+  color: var(--color-primary);
+  text-decoration: underline;
+}
+
+.resharedByLine {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 12px;
+  color: var(--color-text-muted);
+  margin-bottom: 8px;
+}
+
+.metrics {
+  display: flex;
+  gap: 18px;
+}
+
+.metric {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 13px;
+  color: var(--color-text-secondary);
+}
+
+.separator {
+  height: 1px;
+  background: var(--color-border-light);
+  margin: 10px 0;
+}
+
+.counters {
+  display: flex;
+  gap: 14px;
+}
+
+.counter {
+  font-size: 12px;
+  color: var(--color-text-muted);
+}

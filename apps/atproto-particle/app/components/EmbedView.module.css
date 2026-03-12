@@ -1,0 +1,179 @@
+/* Images */
+.imageGrid {
+  display: grid;
+  gap: 4px;
+  border-radius: var(--radius-md);
+  overflow: hidden;
+  margin-top: 8px;
+  margin-bottom: 10px;
+}
+
+.imageGrid[data-count="1"] {
+  grid-template-columns: 1fr;
+}
+
+.imageGrid[data-count="2"] {
+  grid-template-columns: 1fr 1fr;
+}
+
+.imageGrid[data-count="3"] {
+  grid-template-columns: 1fr 1fr;
+}
+
+.imageGrid[data-count="4"] {
+  grid-template-columns: 1fr 1fr;
+}
+
+.imageLink {
+  display: block;
+  line-height: 0;
+}
+
+.image {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  max-height: 260px;
+}
+
+.imageGrid[data-count="1"] .image {
+  max-height: 360px;
+}
+
+/* External link card */
+.external {
+  display: flex;
+  flex-direction: column;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  overflow: hidden;
+  margin-top: 8px;
+  margin-bottom: 10px;
+  text-decoration: none;
+  color: inherit;
+  transition: border-color 0.15s;
+}
+
+.external:hover {
+  border-color: var(--color-text-muted);
+  text-decoration: none;
+}
+
+.externalThumb {
+  width: 100%;
+  max-height: 200px;
+  object-fit: cover;
+}
+
+.externalBody {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 10px 12px;
+}
+
+.externalDomain {
+  font-size: 12px;
+  color: var(--color-text-muted);
+  text-transform: lowercase;
+}
+
+.externalTitle {
+  font-size: 14px;
+  font-weight: 600;
+  line-height: 1.3;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.externalDesc {
+  font-size: 13px;
+  color: var(--color-text-secondary);
+  line-height: 1.4;
+}
+
+/* Quoted post */
+.quote {
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  padding: 10px 12px;
+  margin-top: 8px;
+  margin-bottom: 10px;
+}
+
+.quoteAuthor {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 4px;
+}
+
+.quoteAvatar {
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  object-fit: cover;
+}
+
+.quoteName {
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.quoteHandle {
+  font-size: 12px;
+  color: var(--color-text-muted);
+}
+
+.quoteText {
+  font-size: 13px;
+  line-height: 1.45;
+  color: var(--color-text-secondary);
+  white-space: pre-wrap;
+  word-break: break-word;
+  display: -webkit-box;
+  -webkit-line-clamp: 4;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+/* Video */
+.video {
+  position: relative;
+  border-radius: var(--radius-md);
+  overflow: hidden;
+  margin-top: 8px;
+  margin-bottom: 10px;
+  line-height: 0;
+}
+
+.videoThumb {
+  width: 100%;
+  max-height: 300px;
+  object-fit: cover;
+}
+
+.videoPlayIcon {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 48px;
+  height: 48px;
+  background: rgba(0, 0, 0, 0.6);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #fff;
+  font-size: 20px;
+  pointer-events: none;
+}
+
+/* Record with media */
+.recordWithMedia {
+  display: flex;
+  flex-direction: column;
+}
