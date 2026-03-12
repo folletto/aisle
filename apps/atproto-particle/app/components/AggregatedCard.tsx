@@ -87,8 +87,8 @@ export default function AggregatedCard({ author }: AggregatedCardProps) {
                 )}
                 {otherPosts > 0 && (
                   <span className={styles.counter}>
-                    +{otherPosts} other post{otherPosts > 1 ? "s" : ""} this
-                    session
+                    {otherPosts} more post{otherPosts > 1 ? "s" : ""} in this
+                    snapshot
                   </span>
                 )}
               </div>
