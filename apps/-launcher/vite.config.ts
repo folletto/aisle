@@ -12,4 +12,9 @@ export default defineConfig({
       "~": path.resolve(__dirname, "./app"),
     },
   },
+  server: {
+    fs: {
+      allow: ["../.."],
+    },
+  },
 });

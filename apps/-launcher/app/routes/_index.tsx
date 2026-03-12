@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { useLoaderData } from "react-router";
+import appsData from "../../../../apps.json";
 import AppItem from "~/components/AppItem";
 import Footer from "~/components/Footer";
 import GlobalNav from "~/components/GlobalNav";
@@ -11,14 +12,15 @@ interface App {
   url: string;
   folder: string;
   tags: string[];
+  launcher?: {
+    icon?: string;
+    colors?: [string, string];
+  };
 }
 
-export async function clientLoader() {
-  const response = await fetch("/apps.json");
-  if (!response.ok) throw new Error("Failed to load apps");
-  const data = (await response.json()) as { apps: App[] };
-  // Exclude the launcher itself from the list
-  return data.apps.filter((app) => app.folder !== "-launcher");
+export function clientLoader() {
+  // Import apps.json at build time so icon/color data is always bundled correctly
+  return (appsData.apps as App[]).filter((app) => app.folder !== "-launcher");
 }
 
 export default function Index() {
