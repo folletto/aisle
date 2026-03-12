@@ -36,6 +36,7 @@ on:
 permissions:
   contents: write
   pull-requests: write
+  deployments: write
 
 jobs:
   # ── 1. Provision missing Netlify containers ─────────────────────────────────
@@ -309,6 +310,42 @@ jobs:
               continue
             fi
 
+            # ── GitHub Deployments API: Create deployment ────────────────────────────
+            GH_DEPLOY_ID=""
+            if [ "$IS_PROD" = "true" ]; then
+              GH_ENV_NAME="$FOLDER"
+              GH_TRANSIENT="false"
+            else
+              GH_ENV_NAME="${FOLDER}/pr-${PR_NUMBER:-manual}"
+              GH_TRANSIENT="true"
+            fi
+
+            GH_DEPLOY_PAYLOAD=$(jq -n \
+              --arg ref "$COMMIT_SHA" \
+              --arg env "$GH_ENV_NAME" \
+              --arg desc "Netlify deploy of $FOLDER" \
+              --argjson transient "$GH_TRANSIENT" \
+              '{ref: $ref, environment: $env, description: $desc,
+                auto_merge: false, required_contexts: [],
+                transient_environment: $transient}')
+
+            GH_CREATE_CODE=$(curl -s -o /tmp/gh_deploy.json -w '%{http_code}' \
+              -X POST "https://api.github.com/repos/${GITHUB_REPOSITORY}/deployments" \
+              -H "Authorization: Bearer $GITHUB_TOKEN" \
+              -H "Accept: application/vnd.github+json" \
+              -H "X-GitHub-Api-Version: 2022-11-28" \
+              -H "Content-Type: application/json" \
+              -d "$GH_DEPLOY_PAYLOAD" || echo "000")
+
+            if [ "$GH_CREATE_CODE" = "201" ]; then
+              GH_DEPLOY_ID=$(jq -r '.id' /tmp/gh_deploy.json)
+              echo "  [GitHub Deployments] Created deployment #$GH_DEPLOY_ID (env: $GH_ENV_NAME)"
+            else
+              echo "  [GitHub Deployments] WARNING: Failed to create deployment (HTTP $GH_CREATE_CODE)"
+              cat /tmp/gh_deploy.json 2>/dev/null || true
+            fi
+            # ── End: GitHub Deployments API: Create deployment ───────────────────────
+
             # ── Parse netlify.toml for build config ──
             TOML="$APP_DIR/netlify.toml"
             PUBLISH_DIR="."
@@ -336,6 +373,17 @@ jobs:
                 echo "  ✗ Build failed for $FOLDER"
                 DEPLOY_ROWS="${DEPLOY_ROWS}\n| \`$FOLDER\` | ❌ Build failed |"
                 DEPLOY_FAILED=true
+                # ── GitHub Deployments API: Mark deployment failure (build) ──────────
+                if [ -n "$GH_DEPLOY_ID" ]; then
+                  curl -s -o /dev/null \
+                    -X POST "https://api.github.com/repos/${GITHUB_REPOSITORY}/deployments/${GH_DEPLOY_ID}/statuses" \
+                    -H "Authorization: Bearer $GITHUB_TOKEN" \
+                    -H "Accept: application/vnd.github+json" \
+                    -H "X-GitHub-Api-Version: 2022-11-28" \
+                    -H "Content-Type: application/json" \
+                    -d "{\"state\":\"failure\",\"log_url\":\"https://github.com/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID}\",\"description\":\"Build failed\"}" || true
+                fi
+                # ── End: GitHub Deployments API ──────────────────────────────────────
                 continue
               fi
             fi
@@ -363,6 +411,17 @@ jobs:
               echo "$DEPLOY_OUT"
               DEPLOY_ROWS="${DEPLOY_ROWS}\n| \`$FOLDER\` | ❌ Deploy failed |"
               DEPLOY_FAILED=true
+              # ── GitHub Deployments API: Mark deployment failure (deploy) ─────────
+              if [ -n "$GH_DEPLOY_ID" ]; then
+                curl -s -o /dev/null \
+                  -X POST "https://api.github.com/repos/${GITHUB_REPOSITORY}/deployments/${GH_DEPLOY_ID}/statuses" \
+                  -H "Authorization: Bearer $GITHUB_TOKEN" \
+                  -H "Accept: application/vnd.github+json" \
+                  -H "X-GitHub-Api-Version: 2022-11-28" \
+                  -H "Content-Type: application/json" \
+                  -d "{\"state\":\"failure\",\"log_url\":\"https://github.com/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID}\",\"description\":\"Deploy failed\"}" || true
+              fi
+              # ── End: GitHub Deployments API ────────────────────────────────────
               continue
             fi
 
@@ -376,11 +435,39 @@ jobs:
             if [ -n "$DEPLOY_URL" ]; then
               echo "  ✓ $DEPLOY_URL"
               DEPLOY_ROWS="${DEPLOY_ROWS}\n| \`$FOLDER\` | $DEPLOY_URL |"
+              # ── GitHub Deployments API: Mark deployment success ──────────────────
+              if [ -n "$GH_DEPLOY_ID" ]; then
+                GH_STATUS_PAYLOAD=$(jq -n \
+                  --arg state "success" \
+                  --arg url "$DEPLOY_URL" \
+                  --arg log "https://github.com/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID}" \
+                  --arg desc "Deployed to Netlify" \
+                  '{state: $state, environment_url: $url, log_url: $log, description: $desc}')
+                curl -s -o /dev/null \
+                  -X POST "https://api.github.com/repos/${GITHUB_REPOSITORY}/deployments/${GH_DEPLOY_ID}/statuses" \
+                  -H "Authorization: Bearer $GITHUB_TOKEN" \
+                  -H "Accept: application/vnd.github+json" \
+                  -H "X-GitHub-Api-Version: 2022-11-28" \
+                  -H "Content-Type: application/json" \
+                  -d "$GH_STATUS_PAYLOAD" || true
+              fi
+              # ── End: GitHub Deployments API ──────────────────────────────────────
             else
               echo "  ✗ No URL returned"
               echo "$DEPLOY_OUT"
               DEPLOY_ROWS="${DEPLOY_ROWS}\n| \`$FOLDER\` | ❌ Deploy failed |"
               DEPLOY_FAILED=true
+              # ── GitHub Deployments API: Mark deployment failure (no URL) ─────────
+              if [ -n "$GH_DEPLOY_ID" ]; then
+                curl -s -o /dev/null \
+                  -X POST "https://api.github.com/repos/${GITHUB_REPOSITORY}/deployments/${GH_DEPLOY_ID}/statuses" \
+                  -H "Authorization: Bearer $GITHUB_TOKEN" \
+                  -H "Accept: application/vnd.github+json" \
+                  -H "X-GitHub-Api-Version: 2022-11-28" \
+                  -H "Content-Type: application/json" \
+                  -d "{\"state\":\"failure\",\"log_url\":\"https://github.com/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID}\",\"description\":\"No URL returned from Netlify\"}" || true
+              fi
+              # ── End: GitHub Deployments API ──────────────────────────────────────
             fi
           done
 
