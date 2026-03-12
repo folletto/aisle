@@ -45,7 +45,7 @@ export default function Index() {
 
       <main className={styles.main}>
         {filtered.length === 0 ? (
-          <p className={styles.empty}>No apps match &ldquo;{query}&rdquo;</p>
+          <p className={styles.empty}>No apps for &ldquo;{query}&rdquo;</p>
         ) : (
           <div className={styles.grid}>
             {filtered.map((app) => (
