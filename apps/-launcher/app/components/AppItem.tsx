@@ -7,6 +7,10 @@ interface App {
   url: string;
   folder: string;
   tags: string[];
+  launcher?: {
+    icon?: string;
+    colors?: [string, string];
+  };
 }
 
 interface AppItemProps {
