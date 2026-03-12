@@ -36,6 +36,7 @@ on:
 permissions:
   contents: write
   pull-requests: write
+  deployments: write
 
 jobs:
   # ── 1. Provision missing Netlify containers ─────────────────────────────────
@@ -279,6 +280,7 @@ jobs:
 
           DEPLOY_ROWS=""
           DEPLOY_FAILED=false
+          DEPLOY_RESULTS='{}'
 
           for FOLDER in $(echo "$APPS" | jq -r '.[]'); do
             echo ""
@@ -309,6 +311,15 @@ jobs:
               continue
             fi
 
+            # Compute GitHub environment name (used in the post-deploy status step)
+            if [ "$IS_PROD" = "true" ]; then
+              GH_ENV_NAME="$FOLDER"
+              GH_TRANSIENT="false"
+            else
+              GH_ENV_NAME="${FOLDER}/pr-${PR_NUMBER:-manual}"
+              GH_TRANSIENT="true"
+            fi
+
             # ── Parse netlify.toml for build config ──
             TOML="$APP_DIR/netlify.toml"
             PUBLISH_DIR="."
@@ -336,6 +347,9 @@ jobs:
                 echo "  ✗ Build failed for $FOLDER"
                 DEPLOY_ROWS="${DEPLOY_ROWS}\n| \`$FOLDER\` | ❌ Build failed |"
                 DEPLOY_FAILED=true
+                DEPLOY_RESULTS=$(echo "$DEPLOY_RESULTS" | jq \
+                  --arg f "$FOLDER" --arg env "$GH_ENV_NAME" --argjson t "$GH_TRANSIENT" \
+                  '. + {($f): {env: $env, transient: $t, success: false, url: "", error: "Build failed"}}')
                 continue
               fi
             fi
@@ -363,6 +377,9 @@ jobs:
               echo "$DEPLOY_OUT"
               DEPLOY_ROWS="${DEPLOY_ROWS}\n| \`$FOLDER\` | ❌ Deploy failed |"
               DEPLOY_FAILED=true
+              DEPLOY_RESULTS=$(echo "$DEPLOY_RESULTS" | jq \
+                --arg f "$FOLDER" --arg env "$GH_ENV_NAME" --argjson t "$GH_TRANSIENT" \
+                '. + {($f): {env: $env, transient: $t, success: false, url: "", error: "Deploy failed"}}')
               continue
             fi
 
@@ -376,22 +393,31 @@ jobs:
             if [ -n "$DEPLOY_URL" ]; then
               echo "  ✓ $DEPLOY_URL"
               DEPLOY_ROWS="${DEPLOY_ROWS}\n| \`$FOLDER\` | $DEPLOY_URL |"
+              DEPLOY_RESULTS=$(echo "$DEPLOY_RESULTS" | jq \
+                --arg f "$FOLDER" --arg env "$GH_ENV_NAME" --argjson t "$GH_TRANSIENT" --arg url "$DEPLOY_URL" \
+                '. + {($f): {env: $env, transient: $t, success: true, url: $url, error: ""}}')
             else
               echo "  ✗ No URL returned"
               echo "$DEPLOY_OUT"
               DEPLOY_ROWS="${DEPLOY_ROWS}\n| \`$FOLDER\` | ❌ Deploy failed |"
               DEPLOY_FAILED=true
+              DEPLOY_RESULTS=$(echo "$DEPLOY_RESULTS" | jq \
+                --arg f "$FOLDER" --arg env "$GH_ENV_NAME" --argjson t "$GH_TRANSIENT" \
+                '. + {($f): {env: $env, transient: $t, success: false, url: "", error: "No URL returned from Netlify"}}')
             fi
           done
 
           echo ""
           echo "══════════════════════════════════════════════════════"
 
-          # Expose outputs for the PR comment step
+          # Expose outputs for downstream steps
           {
             echo "deploy_rows<<EOF"
             printf "%b" "$DEPLOY_ROWS"
             echo ""
+            echo "EOF"
+            echo "deploy_results<<EOF"
+            echo "$DEPLOY_RESULTS"
             echo "EOF"
           } >> "$GITHUB_OUTPUT"
 
@@ -399,6 +425,59 @@ jobs:
             echo "One or more apps failed — see above"
             exit 1
           fi
+
+      # ── GitHub Deployments API: Create deployments + post final statuses ───────
+      - name: Update GitHub deployment statuses
+        if: always() && steps.deploy.outputs.deploy_results != '' && steps.deploy.outputs.deploy_results != '{}'
+        uses: actions/github-script@v7
+        env:
+          DEPLOY_RESULTS: ${{ steps.deploy.outputs.deploy_results }}
+          COMMIT_SHA: ${{ github.sha }}
+        with:
+          script: |
+            const results = JSON.parse(process.env.DEPLOY_RESULTS || '{}');
+            const logUrl = `https://github.com/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}`;
+
+            for (const [folder, info] of Object.entries(results)) {
+              // Create the deployment record
+              let deploymentId;
+              try {
+                const { data } = await github.rest.repos.createDeployment({
+                  owner: context.repo.owner,
+                  repo: context.repo.repo,
+                  ref: process.env.COMMIT_SHA,
+                  environment: info.env,
+                  description: `Netlify deploy of ${folder}`,
+                  auto_merge: false,
+                  required_contexts: [],
+                  transient_environment: info.transient,
+                });
+                deploymentId = data.id;
+                console.log(`[${folder}] Created deployment #${deploymentId} (${info.env})`);
+              } catch (err) {
+                console.warn(`[${folder}] Could not create deployment: ${err.message}`);
+                continue;
+              }
+
+              // Post the final status (success or failure)
+              const statusParams = {
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                deployment_id: deploymentId,
+                state: info.success ? 'success' : 'failure',
+                log_url: logUrl,
+                description: info.success ? 'Deployed to Netlify' : info.error,
+              };
+              if (info.success && info.url) statusParams.environment_url = info.url;
+
+              try {
+                await github.rest.repos.createDeploymentStatus(statusParams);
+                console.log(`[${folder}] Marked ${statusParams.state}${info.url ? ` → ${info.url}` : ''}`);
+              } catch (err) {
+                console.warn(`[${folder}] Could not post deployment status: ${err.message}`);
+              }
+            }
+      # ── End: GitHub Deployments API ─────────────────────────────────────────────
 
       # ── Post / update a PR comment with preview URLs ────────────────────────
       - name: Post preview URLs on PR
