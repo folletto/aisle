@@ -1,3 +1,4 @@
+import { MessageSquareQuote } from "lucide-react";
 import { useState } from "react";
 import { useNavigate } from "react-router";
 import { useAuth } from "~/context/AuthContext";
@@ -40,7 +41,17 @@ export default function LoginRoute() {
     <Layout>
       <div className={styles.page}>
         <div className={styles.card}>
-          <h1 className={styles.title}>Particle</h1>
+          <h1 className={styles.title}>
+            <MessageSquareQuote size={28} />
+            Particle
+          </h1>
+          <p className={styles.description}>
+            This is a Bluesky client to help manage information overload and
+            it's an experiment to have healthier consumption of social media.
+            The client works by reading your timeline at time intervals you
+            define and surfaces the top message for each of your followers. It
+            also separates reshares.
+          </p>
           <p className={styles.subtitle}>
             Sign in with your Bluesky account
           </p>
