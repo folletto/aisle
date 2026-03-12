@@ -7,17 +7,35 @@ import type {
 
 const CACHE_KEY = "atparticle_snapshot_cache";
 
-interface CachedSnapshot {
-  windowStart: string;
-  windowEnd: string;
+interface CachedEntry {
   fetchedAt: string;
   authors: AggregatedAuthor[];
   reshares: ReshareItem[];
   notifications: NotificationItem[];
 }
 
+type CacheMap = Record<string, CachedEntry>;
+
 function windowKey(w: TimeWindow): string {
   return `${w.start.toISOString()}|${w.end.toISOString()}`;
+}
+
+function readAll(): CacheMap {
+  try {
+    const raw = localStorage.getItem(CACHE_KEY);
+    if (!raw) return {};
+    return JSON.parse(raw) as CacheMap;
+  } catch {
+    return {};
+  }
+}
+
+function writeAll(map: CacheMap): void {
+  try {
+    localStorage.setItem(CACHE_KEY, JSON.stringify(map));
+  } catch {
+    // Storage full — silently ignore
+  }
 }
 
 export const snapshotCache = {
@@ -28,21 +46,14 @@ export const snapshotCache = {
     reshares: ReshareItem[];
     notifications: NotificationItem[];
   } | null {
-    try {
-      const raw = localStorage.getItem(CACHE_KEY);
-      if (!raw) return null;
-      const cached: CachedSnapshot = JSON.parse(raw);
-      const key = windowKey(window);
-      const cachedKey = `${cached.windowStart}|${cached.windowEnd}`;
-      if (key !== cachedKey) return null;
-      return {
-        authors: cached.authors,
-        reshares: cached.reshares,
-        notifications: cached.notifications,
-      };
-    } catch {
-      return null;
-    }
+    const map = readAll();
+    const entry = map[windowKey(window)];
+    if (!entry) return null;
+    return {
+      authors: entry.authors,
+      reshares: entry.reshares,
+      notifications: entry.notifications,
+    };
   },
 
   set(
@@ -51,22 +62,25 @@ export const snapshotCache = {
     reshares: ReshareItem[],
     notifications: NotificationItem[]
   ): void {
-    const cached: CachedSnapshot = {
-      windowStart: window.start.toISOString(),
-      windowEnd: window.end.toISOString(),
+    const map = readAll();
+    map[windowKey(window)] = {
       fetchedAt: new Date().toISOString(),
       authors,
       reshares,
       notifications,
     };
-    try {
-      localStorage.setItem(CACHE_KEY, JSON.stringify(cached));
-    } catch {
-      // Storage full — silently ignore
-    }
+    writeAll(map);
   },
 
-  clear(): void {
+  /** Remove cache for a specific window. */
+  remove(window: TimeWindow): void {
+    const map = readAll();
+    delete map[windowKey(window)];
+    writeAll(map);
+  },
+
+  /** Clear all cached windows. */
+  clearAll(): void {
     localStorage.removeItem(CACHE_KEY);
   },
 };

@@ -103,7 +103,7 @@ export default function IndexRoute() {
 
   const handleRefresh = useCallback(() => {
     if (!timeWindow) return;
-    snapshotCache.clear();
+    snapshotCache.remove(timeWindow);
     loadWindow(timeWindow, true);
   }, [loadWindow, timeWindow]);
 
