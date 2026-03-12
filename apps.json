@@ -8,7 +8,11 @@
       "siteId": "b56375e5-bfe0-45e1-bac3-aa20018d8f49",
       "tags": [
         "meta"
-      ]
+      ],
+      "launcher": {
+        "icon": "LayoutGrid",
+        "colors": ["#003b4d", "#137ba8"]
+      }
     },
     {
       "name": "Date Picker Calendar",
@@ -18,7 +22,11 @@
       "siteId": "12e9b5da-4d8e-48d0-9af0-b7eaff27afca",
       "tags": [
         "calendar"
-      ]
+      ],
+      "launcher": {
+        "icon": "Calendar",
+        "colors": ["#e07b54", "#f0a875"]
+      }
     },
     {
       "name": "TikTok Quick Embed",
@@ -28,7 +36,11 @@
       "siteId": "251dadff-4d1e-4f34-89ab-0bcc41d61f98",
       "tags": [
         "social"
-      ]
+      ],
+      "launcher": {
+        "icon": "Share2",
+        "colors": ["#4776e6", "#8e54e9"]
+      }
     },
     {
       "name": "TFL Line Status",
@@ -39,7 +51,11 @@
       "tags": [
         "transport",
         "london"
-      ]
+      ],
+      "launcher": {
+        "icon": "Train",
+        "colors": ["#003078", "#e32017"]
+      }
     },
     {
       "name": "AT Particle",
@@ -47,11 +63,14 @@
       "folder": "atproto-particle",
       "url": "https://aisle-atproto-particle.netlify.app",
       "siteId": "f35ebe45-364f-4660-bc24-6a800a66d06f",
-      "icon": "MessageSquareQuote",
       "tags": [
         "social",
         "bluesky"
-      ]
+      ],
+      "launcher": {
+        "icon": "MessageSquareQuote",
+        "colors": ["#0085ff", "#0052cc"]
+      }
     }
   ]
 }
