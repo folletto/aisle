@@ -71,6 +71,22 @@
         "icon": "MessageSquareQuote",
         "colors": ["#0085ff", "#0052cc"]
       }
+    },
+    {
+      "name": "Monoprism",
+      "description": "Browse Google Drive folders with a clean sidebar-and-file-list interface",
+      "folder": "monoprism",
+      "url": "",
+      "siteId": "",
+      "tags": [
+        "productivity",
+        "google-drive",
+        "files"
+      ],
+      "launcher": {
+        "icon": "FolderOpen",
+        "colors": ["#4285F4", "#0F9D58"]
+      }
     }
   ]
 }
