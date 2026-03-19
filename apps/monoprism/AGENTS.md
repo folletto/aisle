@@ -38,7 +38,7 @@ To add a new provider (e.g. Dropbox):
 
 - Uses **Google Identity Services (GIS)** token model — loaded dynamically via a `<script>` tag.
 - Token is stored in React context (memory) only — never in localStorage.
-- **Before deploying**: replace `GOOGLE_CLIENT_ID` in `app/providers/google-drive/auth.ts` with a real OAuth 2.0 Web Client ID from Google Cloud Console. Add your Netlify domain to the authorized JavaScript origins.
+- **Before deploying**: set `GOOGLE_CLIENT_ID` in `app/config.ts` — that's the single file for all deployment-time configuration. Create an OAuth 2.0 Web Client ID in Google Cloud Console and add your Netlify domain to the authorized JavaScript origins.
 
 ### Architecture
 

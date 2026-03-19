@@ -1,9 +1,6 @@
 import "~/types/gis.d.ts";
 import type { UserInfo } from "../types";
-
-// Replace this with a real OAuth 2.0 Web Client ID from Google Cloud Console.
-// Authorized JavaScript origins must include your Netlify domain.
-export const GOOGLE_CLIENT_ID = "YOUR_GOOGLE_CLIENT_ID.apps.googleusercontent.com";
+import { GOOGLE_CLIENT_ID } from "~/config";
 
 const DRIVE_SCOPE = "https://www.googleapis.com/auth/drive.readonly";
 const GIS_SCRIPT_URL = "https://accounts.google.com/gsi/client";
