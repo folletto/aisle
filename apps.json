@@ -11,7 +11,10 @@
       ],
       "launcher": {
         "icon": "LayoutGrid",
-        "colors": ["#003b4d", "#137ba8"]
+        "colors": [
+          "#003b4d",
+          "#137ba8"
+        ]
       }
     },
     {
@@ -25,7 +28,10 @@
       ],
       "launcher": {
         "icon": "Calendar",
-        "colors": ["#e07b54", "#f0a875"]
+        "colors": [
+          "#e07b54",
+          "#f0a875"
+        ]
       }
     },
     {
@@ -39,7 +45,10 @@
       ],
       "launcher": {
         "icon": "Share2",
-        "colors": ["#4776e6", "#8e54e9"]
+        "colors": [
+          "#4776e6",
+          "#8e54e9"
+        ]
       }
     },
     {
@@ -54,7 +63,10 @@
       ],
       "launcher": {
         "icon": "Train",
-        "colors": ["#003078", "#e32017"]
+        "colors": [
+          "#003078",
+          "#e32017"
+        ]
       }
     },
     {
@@ -69,15 +81,18 @@
       ],
       "launcher": {
         "icon": "MessageSquareQuote",
-        "colors": ["#0085ff", "#0052cc"]
+        "colors": [
+          "#0085ff",
+          "#0052cc"
+        ]
       }
     },
     {
       "name": "Monoprism",
       "description": "Browse Google Drive folders with a clean sidebar-and-file-list interface",
       "folder": "monoprism",
-      "url": "",
-      "siteId": "",
+      "url": "https://aisle-monoprism.netlify.app",
+      "siteId": "45b35638-73d3-4db6-bb21-f7a70c2bf0b9",
       "tags": [
         "productivity",
         "google-drive",
@@ -85,7 +100,10 @@
       ],
       "launcher": {
         "icon": "FolderOpen",
-        "colors": ["#4285F4", "#0F9D58"]
+        "colors": [
+          "#4285F4",
+          "#0F9D58"
+        ]
       }
     }
   ]
