@@ -3,27 +3,37 @@ import type { StorageProvider, UserInfo } from "~/providers/types";
 import { getProvider } from "~/providers/registry";
 
 const USER_STORAGE_KEY = "monoprism:user";
-// sessionStorage: survives page refresh within the same tab, cleared on tab close
 const TOKEN_STORAGE_KEY = "monoprism:token";
+const TOKEN_EXPIRY_KEY = "monoprism:token_expiry";
 const PROVIDER_STORAGE_KEY = "monoprism:provider";
+
+// GIS access tokens last 1 hour; store with a small safety margin
+const TOKEN_TTL_MS = 3500 * 1000;
 
 function loadStoredUser(): UserInfo | null {
   try {
     const raw = localStorage.getItem(USER_STORAGE_KEY);
     return raw ? (JSON.parse(raw) as UserInfo) : null;
-  } catch {
-    return null;
-  }
+  } catch { return null; }
 }
 
 function loadStoredToken(): string | null {
-  try { return sessionStorage.getItem(TOKEN_STORAGE_KEY); }
-  catch { return null; }
+  try {
+    const token = localStorage.getItem(TOKEN_STORAGE_KEY);
+    const expiry = localStorage.getItem(TOKEN_EXPIRY_KEY);
+    if (!token || !expiry) return null;
+    if (Date.now() > Number(expiry)) {
+      localStorage.removeItem(TOKEN_STORAGE_KEY);
+      localStorage.removeItem(TOKEN_EXPIRY_KEY);
+      return null;
+    }
+    return token;
+  } catch { return null; }
 }
 
 function loadStoredProvider(): StorageProvider | null {
   try {
-    const name = sessionStorage.getItem(PROVIDER_STORAGE_KEY);
+    const name = localStorage.getItem(PROVIDER_STORAGE_KEY);
     return name ? (getProvider(name) ?? null) : null;
   } catch { return null; }
 }
@@ -48,19 +58,25 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
 
   function setProvider(p: StorageProvider) {
     setProviderState(p);
-    try { sessionStorage.setItem(PROVIDER_STORAGE_KEY, p.name); } catch { /* ignore */ }
+    try { localStorage.setItem(PROVIDER_STORAGE_KEY, p.name); } catch { /* ignore */ }
   }
 
   function setAuth(newToken: string, newUser: UserInfo) {
     setToken(newToken);
     setUser(newUser);
-    localStorage.setItem(USER_STORAGE_KEY, JSON.stringify(newUser));
-    try { sessionStorage.setItem(TOKEN_STORAGE_KEY, newToken); } catch { /* ignore */ }
+    try {
+      localStorage.setItem(USER_STORAGE_KEY, JSON.stringify(newUser));
+      localStorage.setItem(TOKEN_STORAGE_KEY, newToken);
+      localStorage.setItem(TOKEN_EXPIRY_KEY, String(Date.now() + TOKEN_TTL_MS));
+    } catch { /* ignore */ }
   }
 
   function clearToken() {
     setToken(null);
-    try { sessionStorage.removeItem(TOKEN_STORAGE_KEY); } catch { /* ignore */ }
+    try {
+      localStorage.removeItem(TOKEN_STORAGE_KEY);
+      localStorage.removeItem(TOKEN_EXPIRY_KEY);
+    } catch { /* ignore */ }
   }
 
   function logout() {
@@ -70,10 +86,11 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     setToken(null);
     setUser(null);
     setProviderState(null);
-    localStorage.removeItem(USER_STORAGE_KEY);
     try {
-      sessionStorage.removeItem(TOKEN_STORAGE_KEY);
-      sessionStorage.removeItem(PROVIDER_STORAGE_KEY);
+      localStorage.removeItem(USER_STORAGE_KEY);
+      localStorage.removeItem(TOKEN_STORAGE_KEY);
+      localStorage.removeItem(TOKEN_EXPIRY_KEY);
+      localStorage.removeItem(PROVIDER_STORAGE_KEY);
     } catch { /* ignore */ }
   }
 

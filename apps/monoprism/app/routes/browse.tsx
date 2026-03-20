@@ -63,6 +63,15 @@ export default function BrowseRoute() {
     return () => { cancelled = true; };
   }, [token, splat, providerSlug, navigate]);
 
+  // Restore provider from URL slug when token is valid but provider context is empty.
+  // This handles the case where localStorage has a valid token but the stored provider
+  // name is stale/missing (edge case: stored under a different key version, etc.).
+  useEffect(() => {
+    if (provider || !token) return;
+    const p = getProviderBySlug(providerSlug);
+    if (p) setProvider(p);
+  }, [provider, token, providerSlug]);
+
   // Load root folder metadata + sidebar folders (runs once per rootFolderId)
   useEffect(() => {
     if (!provider || !token || !rootFolderId) return;
