@@ -7,4 +7,4 @@
  *   Add your Netlify domain (e.g. https://your-app.netlify.app) to
  *   "Authorized JavaScript origins", then paste the client ID below.
  */
-export const GOOGLE_CLIENT_ID = "YOUR_GOOGLE_CLIENT_ID.apps.googleusercontent.com";
+export const GOOGLE_CLIENT_ID = "588361572806-a4r2ohju3m6q36csposcpva0u97kg7mb.apps.googleusercontent.com";
