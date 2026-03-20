@@ -26,29 +26,28 @@ export default function LoginRoute() {
     }
   }, [token, folder, navigate]);
 
+  // Init auth library, then attempt silent re-auth if user is cached from a previous session
   useEffect(() => {
-    if (provider) {
-      provider.initAuth().catch(console.error);
-    }
-  }, [provider]);
-
-  // If user info is cached from a previous session, attempt silent re-auth automatically
-  useEffect(() => {
-    if (!provider || !user || token || !folder) return;
+    if (!provider || !folder) return;
     let cancelled = false;
 
-    setIsLoading(true);
-    provider.silentAuthenticate?.()
-      .then((newToken) => {
-        if (cancelled) return;
-        setProvider(provider);
+    async function run() {
+      await provider!.initAuth();
+      if (cancelled || !user || token) return;
+
+      setIsLoading(true);
+      try {
+        const newToken = await provider!.silentAuthenticate?.();
+        if (cancelled || newToken == null) return;
+        setProvider(provider!);
         setAuth(newToken, user);
         navigate(`/browse/${getProviderSlug(providerName)}/${folder}`, { replace: true });
-      })
-      .catch(() => {
+      } catch {
         if (!cancelled) setIsLoading(false);
-      });
+      }
+    }
 
+    run().catch(console.error);
     return () => { cancelled = true; };
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [provider, folder]);

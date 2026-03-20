@@ -39,9 +39,10 @@ export default function BrowseRoute() {
   useEffect(() => {
     if (!token) {
       const providerName = getProviderBySlug(providerSlug)?.name ?? providerSlug;
-      navigate(`/login?folder=${rootFolderId}&provider=${providerName}`, { replace: true });
+      const fullPath = encodeURIComponent([rootFolderId, ...subFolderIds].filter(Boolean).join("/"));
+      navigate(`/login?folder=${fullPath}&provider=${providerName}`, { replace: true });
     }
-  }, [token, rootFolderId, providerSlug, navigate]);
+  }, [token, splat, providerSlug, navigate]);
 
   // Load root folder metadata + sidebar folders (runs once per rootFolderId)
   useEffect(() => {
