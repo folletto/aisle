@@ -1,6 +1,7 @@
-import { useEffect, useState } from "react";
-import { useNavigate, useSearchParams } from "react-router";
+import { useEffect, useRef, useState } from "react";
+import { useNavigate, useParams } from "react-router";
 import { useAppContext } from "~/context/AppContext";
+import { getProviderBySlug } from "~/providers/registry";
 import Toolbar from "~/components/Toolbar";
 import Sidebar from "~/components/Sidebar";
 import FileList from "~/components/FileList";
@@ -14,66 +15,80 @@ interface BreadcrumbItem {
 
 export default function BrowseRoute() {
   const navigate = useNavigate();
-  const [searchParams] = useSearchParams();
+  const { providerSlug = "", rootFolderId = "", "*": splatPath = "" } = useParams();
   const { provider, token, user, logout } = useAppContext();
 
-  const rootFolderId = searchParams.get("folder") ?? "";
+  // Sub-folder IDs are the path segments after the root folder ID
+  const subFolderIds = splatPath ? splatPath.split("/").filter(Boolean) : [];
+  const currentFolderId = subFolderIds.length > 0 ? subFolderIds[subFolderIds.length - 1] : rootFolderId;
 
   const [metadata, setMetadata] = useState<FolderMetadata | null>(null);
   const [rootFolders, setRootFolders] = useState<DriveFolder[]>([]);
-  const [currentFolderId, setCurrentFolderId] = useState(rootFolderId);
   const [breadcrumbs, setBreadcrumbs] = useState<BreadcrumbItem[]>([]);
   const [files, setFiles] = useState<DriveFile[]>([]);
   const [subFolders, setSubFolders] = useState<DriveFolder[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
+  // Accumulates folder names as we navigate so re-visits skip extra API calls
+  const folderNameCache = useRef<Map<string, string>>(new Map());
+
   // Guard: not authenticated
   useEffect(() => {
     if (!token) {
-      const params = new URLSearchParams({ folder: rootFolderId, provider: provider?.name ?? "google-drive" });
-      navigate(`/login?${params.toString()}`, { replace: true });
+      const providerName = getProviderBySlug(providerSlug)?.name ?? providerSlug;
+      navigate(`/login?folder=${rootFolderId}&provider=${providerName}`, { replace: true });
     }
-  }, [token, rootFolderId, provider, navigate]);
+  }, [token, rootFolderId, providerSlug, navigate]);
 
-  // Initial load: root folder metadata + contents
+  // Load root folder metadata + sidebar folders (runs once per rootFolderId)
   useEffect(() => {
     if (!provider || !token || !rootFolderId) return;
     let cancelled = false;
 
-    async function loadRoot() {
-      setIsLoading(true);
-      setError(null);
-      try {
-        const [meta, contents] = await Promise.all([
-          provider!.getFolderMetadata(rootFolderId, token!),
-          provider!.listFolderContents(rootFolderId, token!),
-        ]);
+    Promise.all([
+      provider.getFolderMetadata(rootFolderId, token),
+      provider.listFolderContents(rootFolderId, token),
+    ])
+      .then(([meta, contents]) => {
         if (cancelled) return;
         setMetadata(meta);
         setRootFolders(contents.folders);
-        setFiles(contents.files);
-        setSubFolders([]);
-      } catch (err) {
+      })
+      .catch((err) => {
         if (!cancelled) setError(err instanceof Error ? err.message : "Failed to load folder");
-      } finally {
-        if (!cancelled) setIsLoading(false);
-      }
-    }
+      });
 
-    loadRoot();
     return () => { cancelled = true; };
   }, [provider, token, rootFolderId]);
 
-  // Load contents when currentFolderId changes (sidebar tab or breadcrumb nav)
+  // Load current folder contents + breadcrumb names (runs on every URL navigation)
   useEffect(() => {
-    if (!provider || !token || currentFolderId === rootFolderId) return;
+    if (!provider || !token || !rootFolderId) return;
     let cancelled = false;
 
-    async function loadFolder() {
+    async function load() {
       setIsLoading(true);
       setError(null);
       try {
+        if (subFolderIds.length > 0) {
+          // Fetch names for any breadcrumb IDs not yet in the cache
+          const missingIds = subFolderIds.filter((id) => !folderNameCache.current.has(id));
+          await Promise.all(
+            missingIds.map((id) =>
+              provider!.getFolderMetadata(id, token!).then((m) => {
+                folderNameCache.current.set(id, m.name);
+              })
+            )
+          );
+          if (cancelled) return;
+          setBreadcrumbs(
+            subFolderIds.map((id) => ({ id, name: folderNameCache.current.get(id) ?? id }))
+          );
+        } else {
+          setBreadcrumbs([]);
+        }
+
         const contents = await provider!.listFolderContents(currentFolderId, token!);
         if (cancelled) return;
         setFiles(contents.files);
@@ -85,45 +100,46 @@ export default function BrowseRoute() {
       }
     }
 
-    loadFolder();
+    load();
     return () => { cancelled = true; };
-  }, [provider, token, currentFolderId, rootFolderId]);
+  // splatPath changing means the URL (and therefore current folder) changed
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [provider, token, rootFolderId, splatPath]);
+
+  function navigateTo(ids: string[]) {
+    const base = `/browse/${providerSlug}/${rootFolderId}`;
+    navigate(ids.length > 0 ? `${base}/${ids.join("/")}` : base);
+  }
 
   function handleSidebarSelect(folder: DriveFolder) {
-    setCurrentFolderId(folder.id);
-    setBreadcrumbs([{ id: folder.id, name: folder.name }]);
+    folderNameCache.current.set(folder.id, folder.name);
+    navigateTo([folder.id]);
   }
 
   function handleHomeSelect() {
-    setCurrentFolderId(rootFolderId);
-    setBreadcrumbs([]);
+    navigateTo([]);
   }
 
   function handleSubFolderClick(folder: DriveFolder) {
-    setCurrentFolderId(folder.id);
-    setBreadcrumbs((prev) => [...prev, { id: folder.id, name: folder.name }]);
+    folderNameCache.current.set(folder.id, folder.name);
+    navigateTo([...subFolderIds, folder.id]);
   }
 
   function handleBreadcrumbClick(index: number) {
-    const crumb = breadcrumbs[index];
-    setCurrentFolderId(crumb.id);
-    setBreadcrumbs((prev) => prev.slice(0, index + 1));
+    navigateTo(subFolderIds.slice(0, index + 1));
   }
 
   function handleLogout() {
     logout();
-    navigate(`/logged-out?folder=${rootFolderId}&provider=${provider?.name ?? "google-drive"}`);
+    navigate(`/logged-out?folder=${rootFolderId}&provider=${provider?.name ?? providerSlug}`);
   }
 
-  const selectedSidebarId = breadcrumbs.length > 0
-    ? breadcrumbs[0].id
-    : currentFolderId === rootFolderId ? null : currentFolderId;
+  const selectedSidebarId = subFolderIds.length > 0 ? subFolderIds[0] : null;
 
-  const currentFolderName = breadcrumbs.length > 0
-    ? breadcrumbs[breadcrumbs.length - 1].name
-    : currentFolderId === rootFolderId
-    ? (metadata?.name ?? "")
-    : "";
+  const currentFolderName =
+    breadcrumbs.length > 0
+      ? breadcrumbs[breadcrumbs.length - 1].name
+      : metadata?.name ?? "";
 
   return (
     <div className={styles.shell}>
@@ -140,14 +156,14 @@ export default function BrowseRoute() {
           selectedId={selectedSidebarId}
           onSelect={handleSidebarSelect}
           onHomeSelect={handleHomeSelect}
-          isHomeSelected={currentFolderId === rootFolderId}
+          isHomeSelected={subFolderIds.length === 0}
         />
         <main className={styles.main}>
           {error && <p className={styles.error}>{error}</p>}
           <FileList
             folderName={currentFolderName}
             files={files}
-            subFolders={currentFolderId !== rootFolderId ? subFolders : []}
+            subFolders={subFolderIds.length > 0 ? subFolders : []}
             breadcrumbs={breadcrumbs}
             isLoading={isLoading}
             onSubFolderClick={handleSubFolderClick}

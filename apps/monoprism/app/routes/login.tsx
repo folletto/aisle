@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router";
 import { useAppContext } from "~/context/AppContext";
-import { getProvider } from "~/providers/registry";
+import { getProvider, getProviderSlug } from "~/providers/registry";
 import LoginPrompt from "~/components/LoginPrompt";
 
 export default function LoginRoute() {
@@ -22,7 +22,7 @@ export default function LoginRoute() {
       return;
     }
     if (token) {
-      navigate(`/browse?folder=${folder}`, { replace: true });
+      navigate(`/browse/${getProviderSlug(providerName)}/${folder}`, { replace: true });
     }
   }, [token, folder, navigate]);
 
@@ -43,7 +43,7 @@ export default function LoginRoute() {
         if (cancelled) return;
         setProvider(provider);
         setAuth(newToken, user);
-        navigate(`/browse?folder=${folder}`, { replace: true });
+        navigate(`/browse/${getProviderSlug(providerName)}/${folder}`, { replace: true });
       })
       .catch(() => {
         if (!cancelled) setIsLoading(false);
@@ -64,7 +64,7 @@ export default function LoginRoute() {
       const { token: newToken, user } = await provider.authenticate();
       setProvider(provider);
       setAuth(newToken, user);
-      navigate(`/browse?folder=${folder}`, { replace: true });
+      navigate(`/browse/${getProviderSlug(providerName)}/${folder}`, { replace: true });
     } catch (err) {
       setError(err instanceof Error ? err.message : "Sign-in failed. Please try again.");
     } finally {
