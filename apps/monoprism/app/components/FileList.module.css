@@ -1,0 +1,132 @@
+.container {
+  min-height: 100%;
+}
+
+.loading {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.625rem;
+  padding: 3rem;
+  color: var(--color-text-secondary);
+  font-size: 0.9375rem;
+}
+
+.spinner {
+  animation: spin 0.8s linear infinite;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+.breadcrumbs {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.125rem;
+  margin-bottom: 1.25rem;
+  font-size: 0.875rem;
+}
+
+.crumbHome {
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: var(--color-primary);
+  padding: 0.125rem 0.25rem;
+  border-radius: var(--radius-sm);
+  font-size: 0.875rem;
+}
+
+.crumbHome:hover {
+  background: var(--color-surface);
+}
+
+.crumbGroup {
+  display: flex;
+  align-items: center;
+  gap: 0.125rem;
+}
+
+.crumbSep {
+  color: var(--color-text-muted);
+}
+
+.crumbLink {
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: var(--color-primary);
+  padding: 0.125rem 0.25rem;
+  border-radius: var(--radius-sm);
+  font-size: 0.875rem;
+}
+
+.crumbLink:hover {
+  background: var(--color-surface);
+}
+
+.crumbCurrent {
+  color: var(--color-text);
+  padding: 0.125rem 0.25rem;
+  font-weight: 500;
+}
+
+.empty {
+  color: var(--color-text-muted);
+  font-size: 0.9375rem;
+  padding: 2rem 0;
+}
+
+.list {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.row {
+  display: grid;
+  grid-template-columns: 28px 1fr 120px 80px;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.5rem 0.625rem;
+  border-radius: var(--radius-sm);
+  background: transparent;
+  border: none;
+  color: var(--color-text);
+  font-size: 0.875rem;
+  cursor: pointer;
+  text-align: left;
+  text-decoration: none;
+  transition: background 0.1s;
+}
+
+.row:hover {
+  background: var(--color-surface);
+  text-decoration: none;
+}
+
+.fileIcon {
+  display: flex;
+  align-items: center;
+  color: var(--color-text-muted);
+}
+
+.fileName {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.fileMeta {
+  color: var(--color-text-muted);
+  font-size: 0.8125rem;
+  white-space: nowrap;
+}
+
+.fileSize {
+  color: var(--color-text-muted);
+  font-size: 0.8125rem;
+  text-align: right;
+}
