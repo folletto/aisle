@@ -35,6 +35,12 @@ export default function BrowseRoute() {
   // Accumulates folder names as we navigate so re-visits skip extra API calls
   const folderNameCache = useRef<Map<string, string>>(new Map());
 
+  // Update tab title to reflect the full folder path
+  useEffect(() => {
+    const parts = [metadata?.name, ...breadcrumbs.map((b) => b.name)].filter(Boolean);
+    if (parts.length > 0) document.title = parts.join(" / ") + " ▞";
+  }, [metadata?.name, breadcrumbs]);
+
   // Guard: not authenticated — try silent re-auth in-place to avoid a login flash
   useEffect(() => {
     if (token) return;
