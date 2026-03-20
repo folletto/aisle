@@ -15,12 +15,14 @@ interface BreadcrumbItem {
 
 export default function BrowseRoute() {
   const navigate = useNavigate();
-  const { providerSlug = "", rootFolderId = "", "*": splatPath = "" } = useParams();
-  const { provider, token, user, logout } = useAppContext();
-
-  // Sub-folder IDs are the path segments after the root folder ID
-  const subFolderIds = splatPath ? splatPath.split("/").filter(Boolean) : [];
+  // Route is "browse/*" — the splat captures everything after /browse/
+  // URL format: /browse/{providerSlug}/{rootFolderId}/{subId1}/{subId2}/...
+  const { "*": splat = "" } = useParams();
+  const segments = splat.split("/").filter(Boolean);
+  const [providerSlug = "", rootFolderId = "", ...subFolderIds] = segments;
   const currentFolderId = subFolderIds.length > 0 ? subFolderIds[subFolderIds.length - 1] : rootFolderId;
+
+  const { provider, token, user, logout } = useAppContext();
 
   const [metadata, setMetadata] = useState<FolderMetadata | null>(null);
   const [rootFolders, setRootFolders] = useState<DriveFolder[]>([]);
@@ -102,9 +104,8 @@ export default function BrowseRoute() {
 
     load();
     return () => { cancelled = true; };
-  // splatPath changing means the URL (and therefore current folder) changed
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [provider, token, rootFolderId, splatPath]);
+  }, [provider, token, rootFolderId, splat]);
 
   function navigateTo(ids: string[]) {
     const base = `/browse/${providerSlug}/${rootFolderId}`;

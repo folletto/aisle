@@ -4,6 +4,6 @@ export default [
   index("routes/_index.tsx"),
   route("setup", "routes/setup.tsx"),
   route("login", "routes/login.tsx"),
-  route("browse/:providerSlug/:rootFolderId/*", "routes/browse.tsx"),
+  route("browse/*", "routes/browse.tsx"),
   route("logged-out", "routes/logged-out.tsx"),
 ] satisfies RouteConfig;
