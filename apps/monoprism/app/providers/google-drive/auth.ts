@@ -2,7 +2,7 @@ import "~/types/gis.d.ts";
 import type { UserInfo } from "../types";
 import { GOOGLE_CLIENT_ID } from "~/config";
 
-const DRIVE_SCOPE = "https://www.googleapis.com/auth/drive.readonly";
+const DRIVE_SCOPE = "https://www.googleapis.com/auth/drive.readonly openid profile email";
 const GIS_SCRIPT_URL = "https://accounts.google.com/gsi/client";
 
 let scriptLoaded = false;
