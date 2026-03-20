@@ -4,11 +4,7 @@ import { getProvider } from "~/providers/registry";
 
 const USER_STORAGE_KEY = "monoprism:user";
 const TOKEN_STORAGE_KEY = "monoprism:token";
-const TOKEN_EXPIRY_KEY = "monoprism:token_expiry";
 const PROVIDER_STORAGE_KEY = "monoprism:provider";
-
-// GIS access tokens last 1 hour; store with a small safety margin
-const TOKEN_TTL_MS = 3500 * 1000;
 
 function loadStoredUser(): UserInfo | null {
   try {
@@ -18,17 +14,8 @@ function loadStoredUser(): UserInfo | null {
 }
 
 function loadStoredToken(): string | null {
-  try {
-    const token = localStorage.getItem(TOKEN_STORAGE_KEY);
-    const expiry = localStorage.getItem(TOKEN_EXPIRY_KEY);
-    if (!token || !expiry) return null;
-    if (Date.now() > Number(expiry)) {
-      localStorage.removeItem(TOKEN_STORAGE_KEY);
-      localStorage.removeItem(TOKEN_EXPIRY_KEY);
-      return null;
-    }
-    return token;
-  } catch { return null; }
+  try { return localStorage.getItem(TOKEN_STORAGE_KEY); }
+  catch { return null; }
 }
 
 function loadStoredProvider(): StorageProvider | null {
@@ -67,16 +54,12 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     try {
       localStorage.setItem(USER_STORAGE_KEY, JSON.stringify(newUser));
       localStorage.setItem(TOKEN_STORAGE_KEY, newToken);
-      localStorage.setItem(TOKEN_EXPIRY_KEY, String(Date.now() + TOKEN_TTL_MS));
     } catch { /* ignore */ }
   }
 
   function clearToken() {
     setToken(null);
-    try {
-      localStorage.removeItem(TOKEN_STORAGE_KEY);
-      localStorage.removeItem(TOKEN_EXPIRY_KEY);
-    } catch { /* ignore */ }
+    try { localStorage.removeItem(TOKEN_STORAGE_KEY); } catch { /* ignore */ }
   }
 
   function logout() {
@@ -89,7 +72,6 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     try {
       localStorage.removeItem(USER_STORAGE_KEY);
       localStorage.removeItem(TOKEN_STORAGE_KEY);
-      localStorage.removeItem(TOKEN_EXPIRY_KEY);
       localStorage.removeItem(PROVIDER_STORAGE_KEY);
     } catch { /* ignore */ }
   }
