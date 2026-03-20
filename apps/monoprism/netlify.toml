@@ -14,5 +14,5 @@
 
 [[redirects]]
   from = "/*"
-  to = "/__spa-fallback.html"
+  to = "/index.html"
   status = 200
