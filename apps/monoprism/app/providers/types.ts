@@ -40,6 +40,8 @@ export interface StorageProvider {
   initAuth(): Promise<void>;
   /** Trigger the provider's login popup/flow. Returns authenticated user info. */
   authenticate(): Promise<{ token: string; user: UserInfo }>;
+  /** Attempt a silent token refresh with no user interaction. Rejects if interaction is required. */
+  silentAuthenticate?(): Promise<string>;
   logout(): void;
   getFolderMetadata(resourceId: string, token: string): Promise<FolderMetadata>;
   listFolderContents(

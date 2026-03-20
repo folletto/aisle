@@ -1,5 +1,5 @@
 import { detectGoogleDriveFolder } from "./detector";
-import { loadGisScript, requestToken, revokeToken } from "./auth";
+import { loadGisScript, requestToken, requestTokenSilent, revokeToken } from "./auth";
 import { getFolderMetadata, listFolderContents } from "./api";
 import type {
   DetectResult,
@@ -26,6 +26,10 @@ export class GoogleDriveProvider implements StorageProvider {
 
   async authenticate(): Promise<{ token: string; user: UserInfo }> {
     return requestToken();
+  }
+
+  async silentAuthenticate(): Promise<string> {
+    return requestTokenSilent();
   }
 
   logout(): void {

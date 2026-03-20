@@ -71,6 +71,28 @@ export function requestToken(): Promise<{ token: string; user: UserInfo }> {
   });
 }
 
+/**
+ * Attempts a silent (no-UI) token refresh using the last-used Google account.
+ * Resolves with just the access token; rejects if user interaction is required.
+ */
+export function requestTokenSilent(): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const client = window.google.accounts.oauth2.initTokenClient({
+      client_id: GOOGLE_CLIENT_ID,
+      scope: DRIVE_SCOPE,
+      callback: (response) => {
+        if (response.error) {
+          reject(new Error(response.error_description ?? response.error));
+          return;
+        }
+        resolve(response.access_token);
+      },
+      error_callback: (err) => reject(new Error(err.type)),
+    });
+    client.requestAccessToken({ prompt: "" });
+  });
+}
+
 /** Revokes a GIS access token. */
 export function revokeToken(token: string): void {
   if (typeof window !== "undefined" && window.google?.accounts?.oauth2) {

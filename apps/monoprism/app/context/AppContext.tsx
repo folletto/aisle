@@ -1,6 +1,17 @@
 import { createContext, useContext, useState } from "react";
 import type { StorageProvider, UserInfo } from "~/providers/types";
 
+const USER_STORAGE_KEY = "monoprism:user";
+
+function loadStoredUser(): UserInfo | null {
+  try {
+    const raw = localStorage.getItem(USER_STORAGE_KEY);
+    return raw ? (JSON.parse(raw) as UserInfo) : null;
+  } catch {
+    return null;
+  }
+}
+
 interface AppContextValue {
   provider: StorageProvider | null;
   token: string | null;
@@ -15,7 +26,7 @@ const AppContext = createContext<AppContextValue | null>(null);
 export function AppProvider({ children }: { children: React.ReactNode }) {
   const [provider, setProviderState] = useState<StorageProvider | null>(null);
   const [token, setToken] = useState<string | null>(null);
-  const [user, setUser] = useState<UserInfo | null>(null);
+  const [user, setUser] = useState<UserInfo | null>(() => loadStoredUser());
 
   function setProvider(p: StorageProvider) {
     setProviderState(p);
@@ -24,6 +35,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
   function setAuth(newToken: string, newUser: UserInfo) {
     setToken(newToken);
     setUser(newUser);
+    localStorage.setItem(USER_STORAGE_KEY, JSON.stringify(newUser));
   }
 
   function logout() {
@@ -33,6 +45,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     }
     setToken(null);
     setUser(null);
+    localStorage.removeItem(USER_STORAGE_KEY);
   }
 
   return (

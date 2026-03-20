@@ -7,7 +7,7 @@ import LoginPrompt from "~/components/LoginPrompt";
 export default function LoginRoute() {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
-  const { token, setAuth, setProvider } = useAppContext();
+  const { token, user, setAuth, setProvider } = useAppContext();
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -31,6 +31,27 @@ export default function LoginRoute() {
       provider.initAuth().catch(console.error);
     }
   }, [provider]);
+
+  // If user info is cached from a previous session, attempt silent re-auth automatically
+  useEffect(() => {
+    if (!provider || !user || token || !folder) return;
+    let cancelled = false;
+
+    setIsLoading(true);
+    provider.silentAuthenticate?.()
+      .then((newToken) => {
+        if (cancelled) return;
+        setProvider(provider);
+        setAuth(newToken, user);
+        navigate(`/browse?folder=${folder}`, { replace: true });
+      })
+      .catch(() => {
+        if (!cancelled) setIsLoading(false);
+      });
+
+    return () => { cancelled = true; };
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [provider, folder]);
 
   async function handleLogin() {
     if (!provider) {
