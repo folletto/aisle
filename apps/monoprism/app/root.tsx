@@ -35,3 +35,7 @@ export default function App() {
     </AppProvider>
   );
 }
+
+export function HydrateFallback() {
+  return null;
+}

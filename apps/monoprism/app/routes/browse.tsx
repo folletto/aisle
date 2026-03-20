@@ -22,7 +22,7 @@ export default function BrowseRoute() {
   const [providerSlug = "", rootFolderId = "", ...subFolderIds] = segments;
   const currentFolderId = subFolderIds.length > 0 ? subFolderIds[subFolderIds.length - 1] : rootFolderId;
 
-  const { provider, token, user, logout } = useAppContext();
+  const { provider, token, user, setAuth, setProvider, logout } = useAppContext();
 
   const [metadata, setMetadata] = useState<FolderMetadata | null>(null);
   const [rootFolders, setRootFolders] = useState<DriveFolder[]>([]);
@@ -35,13 +35,32 @@ export default function BrowseRoute() {
   // Accumulates folder names as we navigate so re-visits skip extra API calls
   const folderNameCache = useRef<Map<string, string>>(new Map());
 
-  // Guard: not authenticated
+  // Guard: not authenticated — try silent re-auth in-place to avoid a login flash
   useEffect(() => {
-    if (!token) {
-      const providerName = getProviderBySlug(providerSlug)?.name ?? providerSlug;
-      const fullPath = encodeURIComponent([rootFolderId, ...subFolderIds].filter(Boolean).join("/"));
-      navigate(`/login?folder=${fullPath}&provider=${providerName}`, { replace: true });
+    if (token) return;
+
+    const providerName = getProviderBySlug(providerSlug)?.name ?? providerSlug;
+    const fullPath = encodeURIComponent([rootFolderId, ...subFolderIds].filter(Boolean).join("/"));
+    const loginUrl = `/login?folder=${fullPath}&provider=${providerName}`;
+
+    const p = getProviderBySlug(providerSlug);
+    if (!p || !user) {
+      navigate(loginUrl, { replace: true });
+      return;
     }
+
+    // Cached user + known provider → attempt silent re-auth without leaving the page
+    let cancelled = false;
+    p.initAuth()
+      .then(() => p.silentAuthenticate?.())
+      .then((newToken) => {
+        if (cancelled) return;
+        if (newToken == null) { navigate(loginUrl, { replace: true }); return; }
+        setProvider(p);
+        setAuth(newToken, user);
+      })
+      .catch(() => { if (!cancelled) navigate(loginUrl, { replace: true }); });
+    return () => { cancelled = true; };
   }, [token, splat, providerSlug, navigate]);
 
   // Load root folder metadata + sidebar folders (runs once per rootFolderId)
