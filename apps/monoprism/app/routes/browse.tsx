@@ -183,11 +183,6 @@ export default function BrowseRoute() {
 
   const selectedSidebarId = subFolderIds.length > 0 ? subFolderIds[0] : null;
 
-  const currentFolderName =
-    breadcrumbs.length > 0
-      ? breadcrumbs[breadcrumbs.length - 1].name
-      : metadata?.name ?? "";
-
   return (
     <div className={styles.shell}>
       <Toolbar
@@ -208,7 +203,7 @@ export default function BrowseRoute() {
         <main className={styles.main}>
           {error && <p className={styles.error}>{error}</p>}
           <FileList
-            folderName={currentFolderName}
+            folderName={metadata?.name ?? ""}
             files={files}
             subFolders={subFolderIds.length > 0 ? subFolders : []}
             breadcrumbs={breadcrumbs}
