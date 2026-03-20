@@ -22,7 +22,7 @@ export default function BrowseRoute() {
   const [providerSlug = "", rootFolderId = "", ...subFolderIds] = segments;
   const currentFolderId = subFolderIds.length > 0 ? subFolderIds[subFolderIds.length - 1] : rootFolderId;
 
-  const { provider, token, user, setAuth, setProvider, logout } = useAppContext();
+  const { provider, token, user, setAuth, setProvider, clearToken, logout } = useAppContext();
 
   const [metadata, setMetadata] = useState<FolderMetadata | null>(null);
   const [rootFolders, setRootFolders] = useState<DriveFolder[]>([]);
@@ -78,7 +78,12 @@ export default function BrowseRoute() {
         setRootFolders(contents.folders);
       })
       .catch((err) => {
-        if (!cancelled) setError(err instanceof Error ? err.message : "Failed to load folder");
+        if (cancelled) return;
+        if ((err as Error & { status?: number }).status === 401) {
+          clearToken(); // guard will re-run silent auth; keep loading spinner
+        } else {
+          setError(err instanceof Error ? err.message : "Failed to load folder");
+        }
       });
 
     return () => { cancelled = true; };
@@ -116,10 +121,16 @@ export default function BrowseRoute() {
         setFiles(contents.files);
         setSubFolders(contents.folders);
       } catch (err) {
-        if (!cancelled) setError(err instanceof Error ? err.message : "Failed to load folder");
-      } finally {
-        if (!cancelled) setIsLoading(false);
+        if (cancelled) return;
+        if ((err as Error & { status?: number }).status === 401) {
+          clearToken(); // guard will re-run silent auth; keep loading spinner
+        } else {
+          setError(err instanceof Error ? err.message : "Failed to load folder");
+          setIsLoading(false);
+        }
+        return;
       }
+      if (!cancelled) setIsLoading(false);
     }
 
     load();

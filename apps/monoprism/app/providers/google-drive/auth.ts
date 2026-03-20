@@ -6,26 +6,39 @@ const DRIVE_SCOPE = "https://www.googleapis.com/auth/drive.readonly openid profi
 const GIS_SCRIPT_URL = "https://accounts.google.com/gsi/client";
 
 let scriptLoaded = false;
+// Deduplicates concurrent calls so the second caller waits for the same promise
+// instead of finding the <script> tag in the DOM and resolving before it executes.
+let loadingPromise: Promise<void> | null = null;
 
-/** Dynamically injects the GIS script tag (idempotent). */
+/** Dynamically injects the GIS script tag (idempotent, concurrency-safe). */
 export function loadGisScript(): Promise<void> {
   if (scriptLoaded || typeof window === "undefined") return Promise.resolve();
-  if (document.querySelector(`script[src="${GIS_SCRIPT_URL}"]`)) {
-    scriptLoaded = true;
-    return Promise.resolve();
-  }
-  return new Promise((resolve, reject) => {
+  if (loadingPromise) return loadingPromise;
+
+  loadingPromise = new Promise((resolve, reject) => {
+    // Script already in DOM (e.g. injected by a previous page in the session)
+    const existing = document.querySelector<HTMLScriptElement>(`script[src="${GIS_SCRIPT_URL}"]`);
+    if (existing) {
+      if ((window as Window & { google?: { accounts?: unknown } }).google?.accounts) {
+        scriptLoaded = true;
+        resolve();
+        return;
+      }
+      existing.addEventListener("load", () => { scriptLoaded = true; resolve(); });
+      existing.addEventListener("error", () => reject(new Error("Failed to load Google Identity Services")));
+      return;
+    }
+
     const script = document.createElement("script");
     script.src = GIS_SCRIPT_URL;
     script.async = true;
     script.defer = true;
-    script.onload = () => {
-      scriptLoaded = true;
-      resolve();
-    };
+    script.onload = () => { scriptLoaded = true; resolve(); };
     script.onerror = () => reject(new Error("Failed to load Google Identity Services"));
     document.head.appendChild(script);
   });
+
+  return loadingPromise;
 }
 
 /** Fetches the authenticated user's profile from the Google UserInfo endpoint. */
