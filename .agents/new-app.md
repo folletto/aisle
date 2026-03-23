@@ -5,7 +5,7 @@
 * Each app must be self-contained with no dependencies on other apps.
 * Make apps mobile-friendly, responsive
 * If a build system isn't specified, use React Router v7 in framework mode and have components with their own css
-* If needed, use the Lucide icon set
+* If icons are needed, use the Lucide icon set
 
 ## How to
 
@@ -17,3 +17,13 @@
 ## Deployment
 
 * The app will auto-deploy (auto-preview on PR, auto-deploy on merge to main), no need to take any special action unless asked explicitly
+
+## Structure
+
+* Include error handling and edge cases
+* For apps with a build system, add tests
+* Add comments in the code to explain complex logic (i.e. at the top of a complex code file)
+* Test before committing
+* Keep the code clean and maintainable
+* If a build system with components is used, create components where possible
+* Test the app works before committing
