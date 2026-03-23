@@ -43,9 +43,9 @@ export interface StorageProvider {
   /** Attempt a silent token refresh with no user interaction. Rejects if interaction is required. */
   silentAuthenticate?(): Promise<string>;
   logout(): void;
-  getFolderMetadata(resourceId: string, token: string): Promise<FolderMetadata>;
+  getFolderMetadata(resourceId: string, token: string | null): Promise<FolderMetadata>;
   listFolderContents(
     resourceId: string,
-    token: string
+    token: string | null
   ): Promise<{ files: DriveFile[]; folders: DriveFolder[] }>;
 }

@@ -31,6 +31,8 @@ export default function BrowseRoute() {
   const [subFolders, setSubFolders] = useState<DriveFolder[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  // True when the folder is accessible without login (public + API key available)
+  const [publicAccess, setPublicAccess] = useState(false);
 
   // Accumulates folder names as we navigate so re-visits skip extra API calls
   const folderNameCache = useRef<Map<string, string>>(new Map());
@@ -41,33 +43,52 @@ export default function BrowseRoute() {
     if (parts.length > 0) document.title = parts.join(" / ") + " ▞";
   }, [metadata?.name, breadcrumbs]);
 
-  // Guard: not authenticated — try silent re-auth in-place to avoid a login flash
+  // Guard: not authenticated — probe for public access first, then try silent re-auth
   useEffect(() => {
-    if (token) return;
+    if (token || publicAccess) return;
 
-    const providerName = getProviderBySlug(providerSlug)?.name ?? providerSlug;
+    const p = getProviderBySlug(providerSlug);
+    const providerName = p?.name ?? providerSlug;
     const fullPath = encodeURIComponent([rootFolderId, ...subFolderIds].filter(Boolean).join("/"));
     const loginUrl = `/login?folder=${fullPath}&provider=${providerName}`;
 
-    const p = getProviderBySlug(providerSlug);
-    if (!p || !user) {
+    if (!p) {
       navigate(loginUrl, { replace: true });
       return;
     }
 
-    // Cached user + known provider → attempt silent re-auth without leaving the page
     let cancelled = false;
-    p.initAuth()
-      .then(() => p.silentAuthenticate?.())
-      .then((newToken) => {
+
+    async function probe() {
+      try {
+        // Attempt to fetch folder metadata without a token (uses API key if configured)
+        await p!.getFolderMetadata(rootFolderId, null);
         if (cancelled) return;
-        if (newToken == null) { navigate(loginUrl, { replace: true }); return; }
-        setProvider(p);
-        setAuth(newToken, user);
-      })
-      .catch(() => { if (!cancelled) navigate(loginUrl, { replace: true }); });
+        setProvider(p!);
+        setPublicAccess(true);
+      } catch {
+        if (cancelled) return;
+        // Not publicly accessible — try silent re-auth if we have a cached user
+        if (user) {
+          try {
+            await p!.initAuth();
+            const newToken = await p!.silentAuthenticate?.();
+            if (cancelled) return;
+            if (newToken == null) { navigate(loginUrl, { replace: true }); return; }
+            setProvider(p!);
+            setAuth(newToken, user);
+          } catch {
+            if (!cancelled) navigate(loginUrl, { replace: true });
+          }
+        } else {
+          navigate(loginUrl, { replace: true });
+        }
+      }
+    }
+
+    probe();
     return () => { cancelled = true; };
-  }, [token, splat, providerSlug, navigate]);
+  }, [token, publicAccess, splat, providerSlug, navigate]);
 
   // Restore provider from URL slug when token is valid but provider context is empty.
   // This handles the case where localStorage has a valid token but the stored provider
@@ -80,12 +101,13 @@ export default function BrowseRoute() {
 
   // Load root folder metadata + sidebar folders (runs once per rootFolderId)
   useEffect(() => {
-    if (!provider || !token || !rootFolderId) return;
+    if (!provider || (!token && !publicAccess) || !rootFolderId) return;
     let cancelled = false;
+    const effectiveToken = token ?? null;
 
     Promise.all([
-      provider.getFolderMetadata(rootFolderId, token),
-      provider.listFolderContents(rootFolderId, token),
+      provider.getFolderMetadata(rootFolderId, effectiveToken),
+      provider.listFolderContents(rootFolderId, effectiveToken),
     ])
       .then(([meta, contents]) => {
         if (cancelled) return;
@@ -102,12 +124,13 @@ export default function BrowseRoute() {
       });
 
     return () => { cancelled = true; };
-  }, [provider, token, rootFolderId]);
+  }, [provider, token, publicAccess, rootFolderId]);
 
   // Load current folder contents + breadcrumb names (runs on every URL navigation)
   useEffect(() => {
-    if (!provider || !token || !rootFolderId) return;
+    if (!provider || (!token && !publicAccess) || !rootFolderId) return;
     let cancelled = false;
+    const effectiveToken = token ?? null;
 
     async function load() {
       setIsLoading(true);
@@ -118,7 +141,7 @@ export default function BrowseRoute() {
           const missingIds = subFolderIds.filter((id) => !folderNameCache.current.has(id));
           await Promise.all(
             missingIds.map((id) =>
-              provider!.getFolderMetadata(id, token!).then((m) => {
+              provider!.getFolderMetadata(id, effectiveToken).then((m) => {
                 folderNameCache.current.set(id, m.name);
               })
             )
@@ -131,7 +154,7 @@ export default function BrowseRoute() {
           setBreadcrumbs([]);
         }
 
-        const contents = await provider!.listFolderContents(currentFolderId, token!);
+        const contents = await provider!.listFolderContents(currentFolderId, effectiveToken);
         if (cancelled) return;
         setFiles(contents.files);
         setSubFolders(contents.folders);
@@ -151,7 +174,7 @@ export default function BrowseRoute() {
     load();
     return () => { cancelled = true; };
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [provider, token, rootFolderId, splat]);
+  }, [provider, token, publicAccess, rootFolderId, splat]);
 
   function navigateTo(ids: string[]) {
     const base = `/browse/${providerSlug}/${rootFolderId}`;
@@ -181,6 +204,11 @@ export default function BrowseRoute() {
     navigate(`/logged-out?folder=${rootFolderId}&provider=${provider?.name ?? providerSlug}`);
   }
 
+  function handleLogin() {
+    const providerName = provider?.name ?? providerSlug;
+    navigate(`/login?folder=${rootFolderId}&provider=${providerName}`);
+  }
+
   const selectedSidebarId = subFolderIds.length > 0 ? subFolderIds[0] : null;
 
   return (
@@ -191,6 +219,7 @@ export default function BrowseRoute() {
         isPublic={metadata?.isPublic ?? false}
         user={user}
         onLogout={handleLogout}
+        onLogin={handleLogin}
       />
       <div className={styles.body}>
         <Sidebar

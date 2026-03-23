@@ -1,4 +1,4 @@
-import { Globe, Lock, Users, LogOut } from "lucide-react";
+import { Globe, Lock, Users, LogOut, LogIn } from "lucide-react";
 import type { UserInfo } from "~/providers/types";
 import styles from "./Toolbar.module.css";
 
@@ -8,6 +8,7 @@ interface ToolbarProps {
   isPublic: boolean;
   user: UserInfo | null;
   onLogout(): void;
+  onLogin?(): void;
 }
 
 export default function Toolbar({
@@ -16,6 +17,7 @@ export default function Toolbar({
   isPublic,
   user,
   onLogout,
+  onLogin,
 }: ToolbarProps) {
   return (
     <header className={styles.toolbar}>
@@ -34,7 +36,7 @@ export default function Toolbar({
           {isPublic ? <Globe size={14} /> : <Lock size={14} />}
           {isPublic ? "Public" : "Private"}
         </span>
-        {user && (
+        {user ? (
           <button className={styles.userBtn} onClick={onLogout} title="Sign out">
             {user.avatarUrl ? (
               <img
@@ -49,6 +51,11 @@ export default function Toolbar({
             )}
             <span className={styles.userName}>{user.name}</span>
             <LogOut size={14} className={styles.logoutIcon} />
+          </button>
+        ) : (
+          <button className={styles.userBtn} onClick={onLogin} title="Sign in">
+            <LogIn size={14} />
+            <span>Login</span>
           </button>
         )}
       </div>

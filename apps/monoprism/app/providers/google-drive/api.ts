@@ -1,17 +1,20 @@
 import type { DriveFile, DriveFolder, FolderMetadata } from "../types";
+import { GOOGLE_API_KEY } from "~/config";
 
 const BASE = "https://www.googleapis.com/drive/v3";
 
-function authHeaders(token: string): HeadersInit {
-  return { Authorization: `Bearer ${token}` };
-}
-
-async function driveGet<T>(path: string, token: string, params?: Record<string, string>): Promise<T> {
+async function driveGet<T>(path: string, token: string | null, params?: Record<string, string>): Promise<T> {
   const url = new URL(`${BASE}${path}`);
   if (params) {
     Object.entries(params).forEach(([k, v]) => url.searchParams.set(k, v));
   }
-  const res = await fetch(url.toString(), { headers: authHeaders(token) });
+  const headers: HeadersInit = {};
+  if (token) {
+    headers.Authorization = `Bearer ${token}`;
+  } else if (GOOGLE_API_KEY) {
+    url.searchParams.set("key", GOOGLE_API_KEY);
+  }
+  const res = await fetch(url.toString(), { headers });
   if (!res.ok) {
     const err = new Error(`Drive API error ${res.status}: ${res.statusText}`);
     (err as Error & { status: number }).status = res.status;
@@ -44,7 +47,7 @@ interface FilesListResponse {
   nextPageToken?: string;
 }
 
-export async function getFolderMetadata(folderId: string, token: string): Promise<FolderMetadata> {
+export async function getFolderMetadata(folderId: string, token: string | null): Promise<FolderMetadata> {
   const file = await driveGet<FileResource & { permissionIds?: string[] }>(
     `/files/${folderId}`,
     token,
@@ -81,7 +84,7 @@ const FOLDER_MIME = "application/vnd.google-apps.folder";
 
 export async function listFolderContents(
   folderId: string,
-  token: string
+  token: string | null
 ): Promise<{ files: DriveFile[]; folders: DriveFolder[] }> {
   const allItems: FileResource[] = [];
   let pageToken: string | undefined;
