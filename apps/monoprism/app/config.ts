@@ -7,10 +7,11 @@
  *   Add your Netlify domain (e.g. https://your-app.netlify.app) to
  *   "Authorized JavaScript origins", then paste the client ID below.
  *
- * GOOGLE_API_KEY
+ * VITE_GOOGLE_API_KEY
  *   Optional. Create an API key in Google Cloud Console and restrict it to the
  *   Drive API. When set, publicly-shared folders can be browsed without login.
  *   Leave empty to always require sign-in.
+ *   Set this as a Netlify environment variable — never hardcode it here.
  */
 export const GOOGLE_CLIENT_ID = "983332873340-i5sipiflnis024htcp02opedtf1so23q.apps.googleusercontent.com";
-export const GOOGLE_API_KEY = "AIzaSyCzl5dKhSVwv5sDYRKbE0v6fFdnJtG8G9k"; // Set this to your Google API key to enable public folder access without login
+export const GOOGLE_API_KEY = import.meta.env.VITE_GOOGLE_API_KEY ?? "";
