@@ -371,6 +371,12 @@ jobs:
             DEPLOY_FLAGS="--dir=$DEPLOY_DIR --site=$SITE_ID --message=$DEPLOY_MSG --json"
             [ "$IS_PROD" = "true" ] && DEPLOY_FLAGS="$DEPLOY_FLAGS --prod"
 
+            ALIAS_URL=""
+            if [ "$IS_PROD" != "true" ] && [ -n "${PR_NUMBER:-}" ] && [ "$PR_NUMBER" != "manual" ]; then
+              DEPLOY_FLAGS="$DEPLOY_FLAGS --alias=pr-${PR_NUMBER}"
+              ALIAS_URL="https://pr-${PR_NUMBER}--aisle-${FOLDER}.netlify.app"
+            fi
+
             echo "  Deploying (prod=$IS_PROD)..."
             if ! DEPLOY_OUT=$(netlify deploy $DEPLOY_FLAGS 2>&1); then
               echo "  ✗ Deploy failed for $FOLDER:"
@@ -386,7 +392,10 @@ jobs:
             # Extract the deployed URL
             if [ "$IS_PROD" = "true" ]; then
               DEPLOY_URL=$(echo "$DEPLOY_OUT" | jq -r '.url // .ssl_url // empty' 2>/dev/null || true)
+            elif [ -n "$ALIAS_URL" ]; then
+              DEPLOY_URL="$ALIAS_URL"
             else
+              # Fallback: manual dispatch with no PR number
               DEPLOY_URL=$(echo "$DEPLOY_OUT" | jq -r '.deploy_url // empty' 2>/dev/null || true)
             fi
 

@@ -32,7 +32,7 @@ Runs after setup completes. Re-checks out the branch to pick up any commits from
 2. **Build** — reads `netlify.toml` from each app's folder for the build command and publish directory. Runs the build command if present (skips no-op `echo` placeholders).
 3. **Deploy** — uses `netlify deploy` with `--site` pointing to the `siteId` from apps.json.
    - Push to main → production deploy (`--prod`)
-   - Pull request → draft deploy (generates a unique preview URL)
+   - Pull request → deploy with `--alias=pr-<PR_NUMBER>`, producing a stable URL: `https://pr-<PR_NUMBER>--aisle-<folder>.netlify.app` (same URL across all commits to the PR)
 4. **PR comment** — for PRs, creates or updates a single bot comment titled "## Netlify Deploy Preview" with a table of app → preview URL.
 
 **Required secrets:**
