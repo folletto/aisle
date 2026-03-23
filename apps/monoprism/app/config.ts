@@ -13,4 +13,4 @@
  *   Leave empty to always require sign-in.
  */
 export const GOOGLE_CLIENT_ID = "588361572806-a4r2ohju3m6q36csposcpva0u97kg7mb.apps.googleusercontent.com";
-export const GOOGLE_API_KEY = "AIzaSyCJRAuDEeOj-YbqxNMX-E7fgSFNuNefQaA";
+export const GOOGLE_API_KEY = ""; // Set this to your Google API key to enable public folder access without login
