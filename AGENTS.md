@@ -32,7 +32,7 @@ mini-apps/
 
 * When the user asks to create a new app: [new-app.md](.agents/new-app.md)
 * When the user asks to work on GitHub workflows: [github-actions.md](.agents/github-actions.md)
-* When the task requires running git commants / using GitHub: [git.md](.agents/git-md)
+* When the task requires running git commants / using GitHub: [git.md](.agents/git.md)
 
 
 ## Managing agent MD files
