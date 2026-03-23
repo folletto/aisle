@@ -12,5 +12,5 @@
  *   Drive API. When set, publicly-shared folders can be browsed without login.
  *   Leave empty to always require sign-in.
  */
-export const GOOGLE_CLIENT_ID = "588361572806-a4r2ohju3m6q36csposcpva0u97kg7mb.apps.googleusercontent.com";
-export const GOOGLE_API_KEY = ""; // Set this to your Google API key to enable public folder access without login
+export const GOOGLE_CLIENT_ID = "983332873340-i5sipiflnis024htcp02opedtf1so23q.apps.googleusercontent.com";
+export const GOOGLE_API_KEY = "AIzaSyCzl5dKhSVwv5sDYRKbE0v6fFdnJtG8G9k"; // Set this to your Google API key to enable public folder access without login
