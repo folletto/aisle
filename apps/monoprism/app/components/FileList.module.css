@@ -87,7 +87,7 @@
 
 .row {
   display: grid;
-  grid-template-columns: 28px 1fr 120px 80px;
+  grid-template-columns: 28px 1fr 120px;
   align-items: center;
   gap: 0.5rem;
   padding: 0.5rem 0.625rem;
@@ -103,7 +103,7 @@
 }
 
 .row:hover {
-  background: var(--color-surface);
+  background: var(--color-border-light);
   text-decoration: none;
 }
 
@@ -126,7 +126,5 @@
 }
 
 .fileSize {
-  color: var(--color-text-muted);
-  font-size: 0.8125rem;
-  text-align: right;
+  display: none;
 }

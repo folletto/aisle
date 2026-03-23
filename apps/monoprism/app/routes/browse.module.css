@@ -9,11 +9,15 @@
   display: grid;
   grid-template-columns: 220px 1fr;
   overflow: hidden;
+  padding-bottom: 8px;
 }
 
 .main {
   overflow-y: auto;
   padding: 1.5rem;
+  background: var(--color-surface);
+  border-top-left-radius: 12px;
+  border-bottom-left-radius: 12px;
 }
 
 .error {
