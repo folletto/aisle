@@ -40,13 +40,13 @@ export class GoogleDriveProvider implements StorageProvider {
     revokeToken(token);
   }
 
-  getFolderMetadata(resourceId: string, token: string): Promise<FolderMetadata> {
+  getFolderMetadata(resourceId: string, token: string | null): Promise<FolderMetadata> {
     return getFolderMetadata(resourceId, token);
   }
 
   listFolderContents(
     resourceId: string,
-    token: string
+    token: string | null
   ): Promise<{ files: DriveFile[]; folders: DriveFolder[] }> {
     return listFolderContents(resourceId, token);
   }
