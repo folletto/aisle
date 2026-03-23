@@ -495,6 +495,9 @@ jobs:
 
             const sha = process.env.COMMIT_SHA.substring(0, 7);
             const runUrl = `https://github.com/${process.env.REPO}/actions/runs/${process.env.RUN_ID}`;
+            const now = new Date();
+            const months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+            const timestamp = `${now.getUTCFullYear()} ${months[now.getUTCMonth()]} ${now.getUTCDate()} at ${String(now.getUTCHours()).padStart(2,'0')}:${String(now.getUTCMinutes()).padStart(2,'0')}`;
             const body = [
               '## Netlify Deploy Preview',
               '',
@@ -502,7 +505,7 @@ jobs:
               '|-----|-------------|',
               rows,
               '',
-              `*Commit \`${sha}\` · [Workflow run](${runUrl})*`,
+              `*Commit \`${sha}\` · [Workflow run](${runUrl}) · ${timestamp}*`,
             ].join('\n');
 
             const { data: comments } = await github.rest.issues.listComments({
