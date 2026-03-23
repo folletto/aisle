@@ -20,7 +20,7 @@ export default function IndexRoute() {
     const provider = searchParams.get("provider") ?? "google-drive";
 
     if (!folder) {
-      navigate("/setup", { replace: true });
+      navigate("/open", { replace: true });
       return;
     }
 

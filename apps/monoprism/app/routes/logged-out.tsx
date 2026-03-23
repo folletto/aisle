@@ -13,12 +13,12 @@ export default function LoggedOutRoute() {
     if (folder) {
       navigate(`/login?folder=${folder}&provider=${provider}`);
     } else {
-      navigate("/setup");
+      navigate("/open");
     }
   }
 
   function handleNewFolder() {
-    navigate("/setup");
+    navigate("/open");
   }
 
   return (

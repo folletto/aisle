@@ -9,11 +9,28 @@
   display: grid;
   grid-template-columns: 220px 1fr;
   overflow: hidden;
+  padding-bottom: 8px;
 }
 
 .main {
   overflow-y: auto;
   padding: 1.5rem;
+  background: var(--color-surface);
+  border-top-left-radius: 12px;
+  border-bottom-left-radius: 12px;
+}
+
+@media (max-width: 640px) {
+  .body {
+    grid-template-columns: 1fr;
+    grid-template-rows: auto 1fr;
+    padding-bottom: 0;
+  }
+
+  .main {
+    border-top-left-radius: 0;
+    border-bottom-left-radius: 0;
+  }
 }
 
 .error {

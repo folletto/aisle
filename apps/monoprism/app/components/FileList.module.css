@@ -87,7 +87,7 @@
 
 .row {
   display: grid;
-  grid-template-columns: 28px 1fr 120px 80px;
+  grid-template-columns: 28px 1fr 120px;
   align-items: center;
   gap: 0.5rem;
   padding: 0.5rem 0.625rem;
@@ -103,14 +103,22 @@
 }
 
 .row:hover {
-  background: var(--color-surface);
+  color: var(--color-hover-accent);
   text-decoration: none;
+}
+
+.row:hover .fileIcon {
+  color: var(--color-hover-accent);
 }
 
 .fileIcon {
   display: flex;
   align-items: center;
   color: var(--color-text-muted);
+}
+
+.folderIcon {
+  color: var(--color-primary);
 }
 
 .fileName {
@@ -123,10 +131,9 @@
   color: var(--color-text-muted);
   font-size: 0.8125rem;
   white-space: nowrap;
+  text-align: right;
 }
 
 .fileSize {
-  color: var(--color-text-muted);
-  font-size: 0.8125rem;
-  text-align: right;
+  display: none;
 }

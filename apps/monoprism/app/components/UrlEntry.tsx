@@ -1,13 +1,15 @@
 import { useState } from "react";
-import { FolderOpen } from "lucide-react";
+import type { UserInfo } from "~/providers/types";
 import styles from "./UrlEntry.module.css";
 
 interface UrlEntryProps {
   onSubmit(url: string): void;
   error: { supportedSources: string[] } | null;
+  user: UserInfo | null;
+  onLogout(): void;
 }
 
-export default function UrlEntry({ onSubmit, error }: UrlEntryProps) {
+export default function UrlEntry({ onSubmit, error, user, onLogout }: UrlEntryProps) {
   const [url, setUrl] = useState("");
 
   function handleSubmit(e: React.FormEvent) {
@@ -15,14 +17,16 @@ export default function UrlEntry({ onSubmit, error }: UrlEntryProps) {
     if (url.trim()) onSubmit(url.trim());
   }
 
+  function handlePaste(e: React.ClipboardEvent<HTMLInputElement>) {
+    const pasted = e.clipboardData.getData("text").trim();
+    if (pasted) onSubmit(pasted);
+  }
+
   return (
     <div className={styles.page}>
       <div className={styles.card}>
-        <div className={styles.logoWrap}>
-          <FolderOpen size={36} className={styles.logoIcon} />
-        </div>
         <h1 className={styles.title}>Monoprism</h1>
-        <p className={styles.subtitle}>Enter the URL of a cloud storage folder to get started.</p>
+        <p className={styles.subtitle}>Paste the URL of a Google Drive folder you want to open</p>
 
         <form className={styles.form} onSubmit={handleSubmit}>
           <input
@@ -31,6 +35,7 @@ export default function UrlEntry({ onSubmit, error }: UrlEntryProps) {
             placeholder="https://drive.google.com/drive/folders/…"
             value={url}
             onChange={(e) => setUrl(e.target.value)}
+            onPaste={handlePaste}
             autoFocus
             required
           />
@@ -38,6 +43,13 @@ export default function UrlEntry({ onSubmit, error }: UrlEntryProps) {
             Open folder
           </button>
         </form>
+
+        {user && (
+          <div className={styles.userRow}>
+            <span className={styles.userName}>{user.name}</span>
+            <button className={styles.logoutBtn} onClick={onLogout}>log out</button>
+          </div>
+        )}
 
         {error && (
           <div className={styles.errorBox}>

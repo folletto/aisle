@@ -93,12 +93,9 @@ export default function FileList({
     <div className={styles.container}>
       {breadcrumbs.length > 0 && (
         <nav className={styles.breadcrumbs}>
-          <button className={styles.crumbHome} onClick={() => onBreadcrumbClick(-1)}>
-            {folderName || "Home"}
-          </button>
           {breadcrumbs.map((crumb, i) => (
             <span key={crumb.id} className={styles.crumbGroup}>
-              <ChevronRight size={14} className={styles.crumbSep} />
+              {i > 0 && <ChevronRight size={14} className={styles.crumbSep} />}
               {i < breadcrumbs.length - 1 ? (
                 <button
                   className={styles.crumbLink}
@@ -124,11 +121,11 @@ export default function FileList({
               className={styles.row}
               onClick={() => onSubFolderClick(folder)}
             >
-              <span className={styles.fileIcon} style={{ color: "#4285f4" }}>
+              <span className={`${styles.fileIcon} ${styles.folderIcon}`}>
                 <Folder size={18} />
               </span>
               <span className={styles.fileName}>{folder.name}</span>
-              <span className={styles.fileMeta}>Folder</span>
+              <span className={styles.fileMeta} />
               <span className={styles.fileSize} />
             </button>
           ))}
