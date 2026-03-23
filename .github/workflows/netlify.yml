@@ -164,7 +164,7 @@ jobs:
           git config user.email "github-actions[bot]@users.noreply.github.com"
           git add apps.json
           git diff --staged --quiet && { echo "No changes to commit"; exit 0; }
-          git commit -m "Bot: Netlify container created for app ${CREATED_APPS}"
+          git commit -m "Bot: Netlify container created for app ${CREATED_APPS} [skip ci]"
           git pull --rebase origin ${{ github.head_ref || github.ref_name }} || true
           git push origin HEAD:${{ github.head_ref || github.ref_name }}
 
