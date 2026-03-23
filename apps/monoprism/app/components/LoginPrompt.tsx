@@ -39,7 +39,7 @@ export default function LoginPrompt({
           {isLoading ? "Signing in…" : `Sign in with ${providerName}`}
         </button>
 
-        <a href="/setup" className={styles.backLink}>
+        <a href="/open" className={styles.backLink}>
           Use a different folder
         </a>
       </div>

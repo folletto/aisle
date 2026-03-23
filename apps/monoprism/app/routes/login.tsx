@@ -18,7 +18,7 @@ export default function LoginRoute() {
   // Guard: already authenticated, or missing folder param
   useEffect(() => {
     if (!folder) {
-      navigate("/setup", { replace: true });
+      navigate("/open", { replace: true });
       return;
     }
     if (token) {

@@ -209,6 +209,10 @@ export default function BrowseRoute() {
     navigate(`/login?folder=${rootFolderId}&provider=${providerName}`);
   }
 
+  function handleClose() {
+    navigate("/open");
+  }
+
   const selectedSidebarId = subFolderIds.length > 0 ? subFolderIds[0] : null;
 
   return (
@@ -220,14 +224,15 @@ export default function BrowseRoute() {
         user={user}
         onLogout={handleLogout}
         onLogin={handleLogin}
+        onClose={handleClose}
       />
       <div className={styles.body}>
         <Sidebar
           rootFolders={rootFolders}
           selectedId={selectedSidebarId}
+          isHomeSelected={subFolderIds.length === 0}
           onSelect={handleSidebarSelect}
           onHomeSelect={handleHomeSelect}
-          isHomeSelected={subFolderIds.length === 0}
         />
         <main className={styles.main}>
           {error && <p className={styles.error}>{error}</p>}
@@ -235,7 +240,7 @@ export default function BrowseRoute() {
             folderName={metadata?.name ?? ""}
             files={files}
             subFolders={subFolderIds.length > 0 ? subFolders : []}
-            breadcrumbs={breadcrumbs}
+            breadcrumbs={subFolderIds.length > 1 ? breadcrumbs : []}
             isLoading={isLoading}
             onSubFolderClick={handleSubFolderClick}
             onBreadcrumbClick={handleBreadcrumbClick}

@@ -20,6 +20,19 @@
   border-bottom-left-radius: 12px;
 }
 
+@media (max-width: 640px) {
+  .body {
+    grid-template-columns: 1fr;
+    grid-template-rows: auto 1fr;
+    padding-bottom: 0;
+  }
+
+  .main {
+    border-top-left-radius: 0;
+    border-bottom-left-radius: 0;
+  }
+}
+
 .error {
   color: var(--color-danger);
   background: #fef2f2;

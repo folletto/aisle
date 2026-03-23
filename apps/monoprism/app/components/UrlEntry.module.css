@@ -15,21 +15,6 @@
   width: 100%;
 }
 
-.logoWrap {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 64px;
-  height: 64px;
-  border-radius: var(--radius-md);
-  background: linear-gradient(135deg, #4285f4, #0f9d58);
-  margin: 0 auto 1rem;
-}
-
-.logoIcon {
-  color: #fff;
-}
-
 .title {
   font-size: 1.5rem;
   font-weight: 700;
@@ -80,6 +65,35 @@
 
 .btn:hover {
   background: var(--color-primary-hover);
+}
+
+.userRow {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  margin-top: 1.25rem;
+  font-size: 0.875rem;
+  color: var(--color-text-secondary);
+}
+
+.userName {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.logoutBtn {
+  color: var(--color-text-secondary);
+  font-size: 0.875rem;
+  cursor: pointer;
+  padding: 0;
+  border: none;
+  background: none;
+}
+
+.logoutBtn:hover {
+  color: var(--color-text);
 }
 
 .errorBox {

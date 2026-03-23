@@ -6,7 +6,7 @@ import UrlEntry from "~/components/UrlEntry";
 
 export default function SetupRoute() {
   const navigate = useNavigate();
-  const { setProvider } = useAppContext();
+  const { user, logout, setProvider } = useAppContext();
   const [error, setError] = useState<{ supportedSources: string[] } | null>(null);
 
   function handleSubmit(url: string) {
@@ -21,5 +21,5 @@ export default function SetupRoute() {
     navigate(`/login?folder=${result.resourceId}&provider=${result.providerName}`);
   }
 
-  return <UrlEntry onSubmit={handleSubmit} error={error} />;
+  return <UrlEntry onSubmit={handleSubmit} error={error} user={user} onLogout={logout} />;
 }
