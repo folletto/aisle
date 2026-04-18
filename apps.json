@@ -110,8 +110,8 @@
       "name": "AI Displacement Sim",
       "description": "Interactive simulation showing how AI-driven labour displacement conclusions depend on underlying assumptions",
       "folder": "ai-displacement-sim",
-      "url": "",
-      "siteId": "",
+      "url": "https://aisle-ai-displacement-sim.netlify.app",
+      "siteId": "94eb57d3-bd0a-40ee-8404-a5d3c6efd251",
       "tags": [
         "simulation",
         "ai",
