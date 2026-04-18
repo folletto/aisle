@@ -1,0 +1,83 @@
+.container {
+  border-radius: var(--radius-md);
+  border: 1px solid transparent;
+  overflow: hidden;
+  flex-shrink: 0;
+}
+
+.openai {
+  background: color-mix(in srgb, var(--color-openai) 10%, var(--color-surface));
+  border-color: color-mix(in srgb, var(--color-openai) 35%, transparent);
+}
+
+.realistic {
+  background: color-mix(in srgb, var(--color-realistic) 10%, var(--color-surface));
+  border-color: color-mix(in srgb, var(--color-realistic) 35%, transparent);
+}
+
+.header {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  width: 100%;
+  padding: 0.5rem 0.75rem;
+  text-align: left;
+  cursor: pointer;
+}
+
+.summary {
+  flex: 1;
+  font-size: 0.75rem;
+  font-weight: 500;
+  color: var(--color-text-secondary);
+  line-height: 1.4;
+}
+
+.openai .summary {
+  color: color-mix(in srgb, var(--color-openai) 80%, var(--color-text));
+}
+
+.realistic .summary {
+  color: color-mix(in srgb, var(--color-realistic) 80%, var(--color-text));
+}
+
+.chevron {
+  flex-shrink: 0;
+  color: var(--color-text-muted);
+  transition: transform 0.2s;
+}
+
+.chevronOpen {
+  transform: rotate(180deg);
+}
+
+.list {
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+  padding: 0 0.75rem 0.625rem;
+}
+
+.item {
+  font-size: 0.6875rem;
+  color: var(--color-text-secondary);
+  display: flex;
+  align-items: flex-start;
+  gap: 0.35rem;
+  line-height: 1.5;
+}
+
+.item::before {
+  content: "•";
+  flex-shrink: 0;
+  margin-top: 0.05em;
+}
+
+.openai .item::before {
+  color: var(--color-openai);
+}
+
+.realistic .item::before {
+  color: var(--color-realistic);
+}

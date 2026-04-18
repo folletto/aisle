@@ -15,3 +15,84 @@
   color: var(--color-text-muted);
   margin-bottom: 0.75rem;
 }
+
+/* Icon tab bar — hidden on desktop */
+.iconBar {
+  display: none;
+}
+
+/* On desktop: all groups always visible */
+.groupWrapper {
+  display: block;
+}
+
+/* --- Mobile --- */
+@media (max-width: 768px) {
+  .panel {
+    padding: 0;
+    height: auto;
+    overflow-y: visible;
+  }
+
+  .panelHeader {
+    display: none;
+  }
+
+  /* Show the icon bar */
+  .iconBar {
+    display: flex;
+    overflow-x: auto;
+    scrollbar-width: none;
+    background: var(--color-surface);
+    border-bottom: 1px solid var(--color-border);
+    flex-shrink: 0;
+  }
+
+  .iconBar::-webkit-scrollbar {
+    display: none;
+  }
+
+  /* Hide all groups except the active one */
+  .groupWrapper {
+    display: none;
+  }
+
+  .groupWrapper.groupActive {
+    display: block;
+    padding: 0.75rem 1rem;
+  }
+}
+
+/* Icon button */
+.iconBtn {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.2rem;
+  padding: 0.625rem 0.875rem;
+  min-width: 60px;
+  color: var(--color-text-muted);
+  cursor: pointer;
+  transition: color 0.15s, background 0.15s;
+  flex-shrink: 0;
+  border-bottom: 2px solid transparent;
+}
+
+.iconBtn:hover {
+  color: var(--color-text-secondary);
+  background: var(--color-surface-raised);
+}
+
+.iconBtnActive {
+  color: var(--color-primary);
+  border-bottom-color: var(--color-primary);
+}
+
+.iconLabel {
+  font-size: 0.625rem;
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  white-space: nowrap;
+}

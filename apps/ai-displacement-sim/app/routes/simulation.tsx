@@ -1,7 +1,7 @@
 import { Nav } from "~/components/Nav";
 import { PresetSelector } from "~/components/PresetSelector";
 import { CompareToggle } from "~/components/CompareToggle";
-import { OpenAIAssumptionsList } from "~/components/OpenAIAssumptionsList";
+import { ScenarioSummary } from "~/components/ScenarioSummary";
 import { SliderPanel } from "~/components/SliderPanel";
 import { ChartPanel } from "~/components/ChartPanel";
 import { useSimulation } from "~/context/SimulationContext";
@@ -13,7 +13,9 @@ function TopBar() {
     <div className={styles.topBar}>
       <PresetSelector />
       <CompareToggle />
-      {preset === "openai" && <OpenAIAssumptionsList />}
+      {(preset === "openai" || preset === "realistic") && (
+        <ScenarioSummary preset={preset} />
+      )}
     </div>
   );
 }
