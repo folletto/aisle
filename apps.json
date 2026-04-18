@@ -105,6 +105,25 @@
           "#0F9D58"
         ]
       }
+    },
+    {
+      "name": "AI Displacement Sim",
+      "description": "Interactive simulation showing how AI-driven labour displacement conclusions depend on underlying assumptions",
+      "folder": "ai-displacement-sim",
+      "url": "",
+      "siteId": "",
+      "tags": [
+        "simulation",
+        "ai",
+        "economics"
+      ],
+      "launcher": {
+        "icon": "TrendingDown",
+        "colors": [
+          "#b91c1c",
+          "#d97706"
+        ]
+      }
     }
   ]
 }

@@ -1,0 +1,43 @@
+.container {
+  background: color-mix(in srgb, var(--color-openai) 10%, var(--color-surface));
+  border: 1px solid color-mix(in srgb, var(--color-openai) 40%, transparent);
+  border-radius: var(--radius-md);
+  padding: 1rem;
+  margin-top: 0.75rem;
+}
+
+.heading {
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--color-openai);
+  margin-bottom: 0.5rem;
+}
+
+.warning {
+  font-size: 0.75rem;
+  color: var(--color-text-secondary);
+  margin-bottom: 0.75rem;
+  line-height: 1.5;
+}
+
+.list {
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.item {
+  font-size: 0.75rem;
+  color: var(--color-text-secondary);
+  display: flex;
+  align-items: flex-start;
+  gap: 0.4rem;
+}
+
+.item::before {
+  content: "•";
+  color: var(--color-openai);
+  flex-shrink: 0;
+  margin-top: 0.05em;
+}
