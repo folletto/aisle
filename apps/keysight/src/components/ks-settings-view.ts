@@ -78,7 +78,6 @@ export class KsSettingsView extends HTMLElement {
       <fieldset><legend>${t('speed')}</legend>${seg('speed', [['static', t('static')], ['20', t('bpm', { n: 20 })], ['40', t('bpm', { n: 40 })], ['80', t('bpm', { n: 80 })]])}</fieldset>
       <fieldset><legend>${t('length')}</legend><div class="len"><span>${t('minutes')}</span><output></output></div><input type="range" name="lengthMin" min="1" max="10" step="1" aria-label="${t('lengthAria')}"></fieldset>
       ${toggle('scaleStart', t('scaleStart'))}
-      ${toggle('haptics', t('haptics'))}
       ${toggle('sound', t('sound'))}
       <fieldset><legend>${t('language')}</legend><div class="pair"><select name="language" aria-label="${t('language')}">${LANGS.map((l) => `<option value="${l.code}">${l.name}</option>`).join('')}</select></div></fieldset>
     </form>`;
@@ -104,7 +103,6 @@ export class KsSettingsView extends HTMLElement {
       case 'lengthMin': return settingsStore.set({ lengthMin: Number(el.value) });
       case 'matchLabel': return settingsStore.set({ matchLabel: el.checked });
       case 'scaleStart': return settingsStore.set({ scaleStart: el.checked });
-      case 'haptics': return settingsStore.set({ haptics: el.checked });
       case 'sound': return settingsStore.set({ sound: el.checked });
       case 'language': return settingsStore.set({ language: el.value as Lang });
     }
@@ -136,7 +134,7 @@ export class KsSettingsView extends HTMLElement {
     const match = root.querySelector<HTMLInputElement>('#matchLabel')!;
     match.disabled = labelsUnderNote(s);
     match.checked = labelsUnderNote(s) || s.matchLabel;
-    for (const id of ['scaleStart', 'haptics', 'sound'] as const) root.querySelector<HTMLInputElement>(`#${id}`)!.checked = s[id];
+    for (const id of ['scaleStart', 'sound'] as const) root.querySelector<HTMLInputElement>(`#${id}`)!.checked = s[id];
     root.querySelector<HTMLSelectElement>('select[name="language"]')!.value = s.language;
   }
 }
