@@ -7,6 +7,8 @@ import { KeyPress } from '../../src/input/types';
 
 /** Fake score that mimics ks-score's target rules. */
 class FakeScore implements ScoreLike {
+  streaks: Array<number | null> = [];
+  setStreak(n: number | null) { this.streaks.push(n); }
   shown: Note | null = null;
   queue: Note[] = [];
   calls: string[] = [];
@@ -126,5 +128,21 @@ describe('timed session', () => {
     e.start(0, 1_000_000);
     e.tick(60_000);
     expect(e.record()).toMatchObject({ bpm: 20, clef: 'treble', range: 'C4-B4', startedAt: 1_000_000, endedAt: 1_060_000 });
+  });
+
+  it('tracks the streak of notes hit with no mistake', () => {
+    const score = new FakeScore();
+    const e = new SessionEngine(settings({}), score, createRng(3));
+    e.start(0);
+    const hit = (t: number) => e.press(press(score.target()!), t);
+    hit(100); hit(200); hit(300);
+    expect(e.streak).toBe(3);
+    e.press(press(wrongNote(score.target()!)), 400); // mistake resets
+    expect(e.streak).toBe(0);
+    hit(500); // answered after a mistake: not a clean hit
+    expect(e.streak).toBe(0);
+    hit(600);
+    expect(e.streak).toBe(1);
+    expect(score.streaks[0]).toBe(0);
   });
 });

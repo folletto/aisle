@@ -23,6 +23,8 @@ export interface ScoreLike {
   judge(pressed: Note): JudgeResult;
   start(): void;
   stop(): void;
+  /** Show the current streak under the clef (null hides it). Optional: not every score has one. */
+  setStreak?(n: number | null): void;
 }
 
 export interface EventRecord {
@@ -74,6 +76,8 @@ export class SessionEngine {
   private endAt = 0;
   private nextSpawn = 0;
   private correct = 0;
+  /** Notes hit in a row with no mistake. */
+  streak = 0;
   private total = 0;
   private startedAtWall = 0;
   private endedAtWall = 0;
@@ -101,7 +105,9 @@ export class SessionEngine {
     this.endAt = now + this.settings.lengthMin * 60_000;
     this.nextSpawn = now;
     this.startedAtWall = wallClock;
+    this.streak = 0;
     this.score.clear();
+    this.score.setStreak?.(0);
     this.score.start();
     if (this.bpm === null) this.showNext(now);
     else this.tick(now);
@@ -140,10 +146,14 @@ export class SessionEngine {
     });
     if (!result.correct) {
       target.wrong = true;
+      this.setStreak(0);
       return;
     }
     this.total++;
-    if (!target.wrong) this.correct++;
+    if (!target.wrong) {
+      this.correct++;
+      this.setStreak(this.streak + 1);
+    }
     this.pending.shift();
     if (this.bpm === null) this.showNext(now);
   }
@@ -154,6 +164,7 @@ export class SessionEngine {
     const target = this.pending.shift();
     if (!target) return;
     this.total++;
+    this.setStreak(0);
     this.events.push({
       t: now - this.startAt,
       expected: noteName(target.note),
@@ -170,6 +181,7 @@ export class SessionEngine {
     this.state = 'stopped';
     this.score.stop();
     this.score.clear();
+    this.score.setStreak?.(null);
   }
 
   result(): SessionResult {
@@ -201,7 +213,13 @@ export class SessionEngine {
     this.endedAtWall = this.startedAtWall + (now - this.startAt);
     this.score.stop();
     this.score.clear();
+    this.score.setStreak?.(null);
     this.onFinish?.(this.result());
+  }
+
+  private setStreak(n: number): void {
+    this.streak = n;
+    this.score.setStreak?.(n);
   }
 
   private nextNote(): Note {

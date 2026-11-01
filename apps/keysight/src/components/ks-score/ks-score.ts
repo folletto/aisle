@@ -53,6 +53,8 @@ export class KsScore extends HTMLElement {
   private staticEntry: Entry | null = null;
   private queue: Entry[] = [];
   private fontsReady = false;
+  private streak: number | null = null;
+  private streakEl: SVGTextElement | null = null;
 
   constructor() {
     super();
@@ -148,6 +150,12 @@ export class KsScore extends HTMLElement {
     return { correct, expected: target.note, pressed };
   }
 
+  /** Streak number under the clef; null hides it. Survives relayouts. */
+  setStreak(n: number | null): void {
+    this.streak = n;
+    this.drawStreak();
+  }
+
   /** Start / freeze the scrolling clock. */
   start(): void {
     this.running = true;
@@ -214,11 +222,39 @@ export class KsScore extends HTMLElement {
     stave.addClef(this.clef);
     stave.setContext(ctx).draw();
     this.stave = stave;
+    this.streakEl = null;
+    this.drawStreak();
 
     this.staticEntry = null;
     this.queue = [];
     if (keepStatic) this.showNote(keepStatic);
     for (const k of keepQueue) this.queue.push(this.makeScrolling(k.note, k.progress));
+  }
+
+  private drawStreak(): void {
+    if (!this.svgEl || !this.stave || !this.layout) return;
+    if (this.streak === null) {
+      this.streakEl?.remove();
+      this.streakEl = null;
+      return;
+    }
+    if (!this.streakEl) {
+      const t = document.createElementNS(SVG_NS, 'text');
+      // Centred under the clef: the clef sits between the stave's left edge and where notes start.
+      t.setAttribute('x', String((this.stave.getX() + this.stave.getNoteStartX()) / 2));
+      t.setAttribute('y', String(this.layout.topLineY + 4 * LINE_GAP + 34));
+      t.setAttribute('text-anchor', 'middle');
+      t.setAttribute('font-size', '16');
+      t.setAttribute('font-family', 'system-ui, sans-serif');
+      t.setAttribute('font-weight', '700');
+      t.setAttribute('fill', '#4a5060');
+      t.setAttribute('stroke', 'none');
+      t.setAttribute('class', 'streak');
+      t.style.fontVariantNumeric = 'tabular-nums';
+      this.svgEl.appendChild(t);
+      this.streakEl = t;
+    }
+    this.streakEl.textContent = String(this.streak);
   }
 
   /** Draw one note (stem, ledger lines, accidental, label) into its own group. */
