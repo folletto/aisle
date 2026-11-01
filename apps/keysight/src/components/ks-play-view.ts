@@ -14,7 +14,7 @@ import { attachKeyboardInput } from '../input/keyboard-map';
 import { saveCompletedSession } from '../data/storage';
 import { settingsStore } from '../state';
 import { icon } from '../icons';
-import { hapticTick } from '../haptics';
+import { hapticPress, hapticRelease } from '../haptics';
 import { playNote, primeAudio } from '../sound';
 import { t } from '../i18n';
 
@@ -71,9 +71,18 @@ export class KsPlayView extends HTMLElement {
     // Key sound for both touch and computer keyboard presses
     this.cleanups.push(this.bus.onPress((kp) => settingsStore.get().sound && playNote(kp.midi)));
 
+    // iOS only ticks inside a user-activation event, and touch pointerdown is not one: tick on release.
+    let pendingRelease = 0;
+    this.piano.addEventListener('pointerup', () => {
+      if (pendingRelease > 0 && settingsStore.get().haptics) hapticRelease();
+      pendingRelease = 0;
+    });
     // Piano touches -> bus
     this.piano.addEventListener('ks-key-down', (e) => {
-      if (settingsStore.get().haptics) hapticTick();
+      if (settingsStore.get().haptics) {
+        hapticPress();
+        pendingRelease++;
+      }
       const midi = (e as CustomEvent).detail.midi as number;
       const prefer = settingsStore.get().accidentals === 'flats' ? 'b' : '#';
       this.bus.emit({ note: noteFromMidi(midi, prefer), midi, source: 'touch', timestamp: performance.now() });
