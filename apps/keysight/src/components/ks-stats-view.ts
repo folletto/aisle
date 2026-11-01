@@ -1,6 +1,7 @@
 // Stats view: 7 and 30 day averages (anchored on the last session) and the 5 latest scores.
 import { computeStats, Average } from '../core/stats';
 import { listSessions } from '../data/storage';
+import { getLanguage, sessionsLabel, t } from '../i18n';
 
 const STYLE = `
 :host { display: block; height: 100%; overflow-y: auto; box-sizing: border-box; background: #f6f7fb; color: #1b1d23; font-family: system-ui, sans-serif;
@@ -26,34 +27,34 @@ const esc = (s: string) => s.replace(/[&<>]/g, (c) => ({ '&': '&amp;', '<': '&lt
 function avgCard(title: string, a: Average | null): string {
   return `<div class="card"><h2>${title}</h2>${
     a
-      ? `<div class="big">${a.percent}%</div><div class="sub">${a.correct} of ${a.total} notes · ${a.sessions} session${a.sessions === 1 ? '' : 's'}</div>`
-      : `<div class="big">–</div><div class="sub">No sessions yet</div>`
+      ? `<div class="big">${a.percent}%</div><div class="sub">${t('notesOf', { c: a.correct, t: a.total })} · ${sessionsLabel(a.sessions)}</div>`
+      : `<div class="big">–</div><div class="sub">${t('noSessionsShort')}</div>`
   }</div>`;
 }
 
 export class KsStatsView extends HTMLElement {
   async connectedCallback(): Promise<void> {
     const root = this.shadowRoot ?? this.attachShadow({ mode: 'open' });
-    root.innerHTML = `<style>${STYLE}</style><div class="wrap"><h1>Stats</h1></div>`;
+    root.innerHTML = `<style>${STYLE}</style><div class="wrap"><h1>${t('stats')}</h1></div>`;
     let body: string;
     try {
       const stats = computeStats(await listSessions());
       if (!this.isConnected) return;
       body = stats.latest.length
-        ? `<div class="avgs">${avgCard('Last 7 days', stats.last7)}${avgCard('Last 30 days', stats.last30)}</div>
-           <div class="card"><h2>Latest scores</h2><table>
-             <tr><th>When</th><th>Hit</th><th>Total</th><th>%</th></tr>
+        ? `<div class="avgs">${avgCard(t('last7'), stats.last7)}${avgCard(t('last30'), stats.last30)}</div>
+           <div class="card"><h2>${t('latest')}</h2><table>
+             <tr><th>${t('when')}</th><th>${t('hit')}</th><th>${t('total')}</th><th>%</th></tr>
              ${stats.latest
                .map((s) => {
-                 const when = new Date(s.startedAt).toLocaleDateString(undefined, { day: 'numeric', month: 'short' });
-                 const mode = s.mode === 'static' ? 'Static' : `${s.mode} bpm`;
+                 const when = new Date(s.startedAt).toLocaleDateString(getLanguage(), { day: 'numeric', month: 'short' });
+                 const mode = s.mode === 'static' ? t('static') : t('bpm', { n: s.mode });
                  return `<tr><td>${esc(when)} · ${esc(mode)}</td><td>${s.correct}</td><td>${s.total}</td><td>${s.percent}%</td></tr>`;
                })
                .join('')}
            </table></div>`
-        : `<div class="card empty">No sessions yet. Finish a session and your scores will show up here.</div>`;
+        : `<div class="card empty">${t('statsEmpty')}</div>`;
     } catch {
-      body = `<div class="card empty">Could not load your sessions.</div>`;
+      body = `<div class="card empty">${t('statsError')}</div>`;
     }
     root.querySelector('.wrap')!.insertAdjacentHTML('beforeend', body);
   }

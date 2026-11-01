@@ -1,4 +1,5 @@
 // Settings model, defaults and validation.
+import { Lang, isLang } from '../i18n';
 import { LabelMode, midiOf, parseNote } from './notes';
 import { Accidentals, CLEFS, Clef, rangeOptions } from './pool';
 
@@ -17,6 +18,7 @@ export interface Settings {
   pianoLabels: boolean;
   /** Haptic tick when a piano key is pressed (where supported). */
   haptics: boolean;
+  language: Lang;
 }
 
 export const DEFAULT_SETTINGS: Settings = {
@@ -30,6 +32,7 @@ export const DEFAULT_SETTINGS: Settings = {
   scaleStart: true,
   pianoLabels: false,
   haptics: true,
+  language: 'en',
 };
 
 export function rangeIsValid(clef: Clef, low: string, high: string): boolean {
@@ -47,6 +50,7 @@ export function normaliseSettings(input: Partial<Settings> | undefined): Setting
   s.lengthMin = Math.min(10, Math.max(1, Math.round(Number.isFinite(Number(s.lengthMin)) ? Number(s.lengthMin) : DEFAULT_SETTINGS.lengthMin)));
   s.scaleStart = Boolean(s.scaleStart);
   s.pianoLabels = Boolean(s.pianoLabels);
+  if (!isLang(s.language)) s.language = DEFAULT_SETTINGS.language;
   s.haptics = typeof s.haptics === 'boolean' ? s.haptics : DEFAULT_SETTINGS.haptics;
   if (!rangeIsValid(s.clef, s.rangeLow, s.rangeHigh)) {
     s.rangeLow = CLEFS[s.clef].defaultLow;

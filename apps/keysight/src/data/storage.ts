@@ -1,5 +1,6 @@
 // The only module the app uses to reach IndexedDB.
 import { DEFAULT_SETTINGS, Settings, normaliseSettings } from '../core/settings';
+import { detectLanguage } from '../i18n';
 import { EventRecord, SessionRecord } from '../core/session';
 import { EventRow, KeySightDB, SessionRow } from './db';
 
@@ -13,9 +14,10 @@ export function useDatabase(instance: KeySightDB): void {
 export async function getSettings(): Promise<Settings> {
   try {
     const row = await db.settings.get('settings');
-    if (!row) return { ...DEFAULT_SETTINGS };
+    const language = detectLanguage(typeof navigator !== 'undefined' ? navigator.languages : []);
+    if (!row) return { ...DEFAULT_SETTINGS, language };
     const { id: _id, ...rest } = row;
-    return normaliseSettings(rest);
+    return normaliseSettings({ language, ...(rest as Partial<Settings>) }); // stored language wins; older rows get the detected one
   } catch (err) {
     console.warn('Could not read settings', err);
     return { ...DEFAULT_SETTINGS };

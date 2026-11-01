@@ -12,7 +12,7 @@ import {
   hiddenCounts,
   pinchVisible,
 } from '../../core/keyboard';
-import { LabelMode, formatKeyLabel, midiOf, noteFromMidi, parseNote } from '../../core/notes';
+import { LabelMode, Locale, formatKeyLabel, midiOf, noteFromMidi, parseNote } from '../../core/notes';
 import { whiteNotesBetween } from '../../core/pool';
 
 const STYLE = `
@@ -36,7 +36,7 @@ const STYLE = `
 `;
 
 export class KsPiano extends HTMLElement {
-  static observedAttributes = ['range-low', 'range-high', 'locked', 'labels', 'show-labels', 'accidentals'];
+  static observedAttributes = ['range-low', 'range-high', 'locked', 'labels', 'show-labels', 'accidentals', 'locale'];
 
   private keysEl: HTMLDivElement;
   private ro: ResizeObserver;
@@ -96,7 +96,7 @@ export class KsPiano extends HTMLElement {
   attributeChangedCallback(name: string): void {
     if (name === 'locked') return;
     if (!this.initialised) return;
-    if (name === 'labels' || name === 'show-labels' || name === 'accidentals') this.render();
+    if (name === 'labels' || name === 'show-labels' || name === 'accidentals' || name === 'locale') this.render();
     else this.fitToRange();
   }
 
@@ -171,7 +171,8 @@ export class KsPiano extends HTMLElement {
     let mode: LabelMode = attr === 'none' || attr === 'solfege' || attr === 'both' ? attr : 'letters';
     if (black && mode === 'both') mode = 'letters'; // two names would not fit a black key
     const note = noteFromMidi(midi, this.getAttribute('accidentals') === 'flats' ? 'b' : '#');
-    return formatKeyLabel(note, mode);
+    const l = this.getAttribute('locale');
+    return formatKeyLabel(note, mode, (l === 'fr' || l === 'it' ? l : 'en') as Locale);
   }
 
   private midiAt(e: PointerEvent): number | null {

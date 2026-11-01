@@ -2,6 +2,7 @@
 import { LabelMode, midiOf, parseNote } from '../core/notes';
 import { Accidentals, Clef, rangeOptions } from '../core/pool';
 import { Settings, Speed } from '../core/settings';
+import { LANGS, Lang, getLanguage, t } from '../i18n';
 import { settingsStore } from '../state';
 
 const STYLE = `
@@ -38,47 +39,67 @@ function seg(name: string, options: Array<[string, string]>): string {
 
 export class KsSettingsView extends HTMLElement {
   private unsub?: () => void;
+  private builtFor: Lang | null = null;
+  private listening = false;
 
   connectedCallback(): void {
-    const root = this.shadowRoot ?? this.attachShadow({ mode: 'open' });
-    root.innerHTML = `<style>${STYLE}</style>
-    <form onsubmit="return false">
-      <h1>Settings</h1>
-      <fieldset><legend>Clef</legend>${seg('clef', [['treble', 'Treble'], ['bass', 'Bass']])}</fieldset>
-      <fieldset><legend>Labels</legend>${seg('labels', [['none', 'None'], ['solfege', 'Do Re Mi'], ['letters', 'C D E'], ['both', 'Both']])}</fieldset>
-      <fieldset><legend>Range</legend><div class="pair"><select name="rangeLow" aria-label="Lowest note"></select><span>to</span><select name="rangeHigh" aria-label="Highest note"></select></div></fieldset>
-      <fieldset><legend>Sharps and flats</legend>${seg('accidentals', [['none', 'None'], ['sharps', 'Sharps ♯'], ['flats', 'Flats ♭'], ['both', 'Both']])}</fieldset>
-      <fieldset><legend>Speed</legend>${seg('speed', [['static', 'Static'], ['20', '20 bpm'], ['40', '40 bpm'], ['80', '80 bpm']])}</fieldset>
-      <fieldset><legend>Length</legend><div class="len"><span></span><output></output></div><input type="range" name="lengthMin" min="1" max="10" step="1" aria-label="Session length in minutes"></fieldset>
-      <div class="row toggle"><label for="scaleStart">Scale start</label><input type="checkbox" id="scaleStart" name="scaleStart"></div>
-      <div class="row toggle"><label for="pianoLabels">Key names on piano</label><input type="checkbox" id="pianoLabels" name="pianoLabels"></div>
-      <div class="row toggle"><label for="haptics">Haptic feedback</label><input type="checkbox" id="haptics" name="haptics"></div>
-    </form>`;
-    root.addEventListener('change', (e) => this.onChange(e.target as HTMLInputElement));
-    root.addEventListener('input', (e) => {
-      const t = e.target as HTMLInputElement;
-      if (t.name === 'lengthMin') this.onChange(t);
-    });
+    this.build();
     this.sync(settingsStore.get());
-    this.unsub = settingsStore.subscribe((s) => this.sync(s));
+    this.unsub = settingsStore.subscribe((s) => {
+      const langChanged = this.builtFor !== getLanguage();
+      if (langChanged) this.build();
+      this.sync(s);
+      if (langChanged) this.shadowRoot!.querySelector<HTMLSelectElement>('select[name="language"]')?.focus();
+    });
   }
 
   disconnectedCallback(): void {
     this.unsub?.();
   }
 
-  private onChange(t: HTMLInputElement): void {
-    switch (t.name) {
-      case 'clef': return settingsStore.set({ clef: t.value as Clef });
-      case 'labels': return settingsStore.set({ labels: t.value as LabelMode });
-      case 'accidentals': return settingsStore.set({ accidentals: t.value as Accidentals });
-      case 'speed': return settingsStore.set({ speed: (t.value === 'static' ? 'static' : Number(t.value)) as Speed });
-      case 'rangeLow': return settingsStore.set({ rangeLow: t.value });
-      case 'rangeHigh': return settingsStore.set({ rangeHigh: t.value });
-      case 'lengthMin': return settingsStore.set({ lengthMin: Number(t.value) });
-      case 'scaleStart': return settingsStore.set({ scaleStart: t.checked });
-      case 'pianoLabels': return settingsStore.set({ pianoLabels: t.checked });
-      case 'haptics': return settingsStore.set({ haptics: t.checked });
+  /** (Re)build the form in the current language. Listeners live on the shadow root, so they survive rebuilds. */
+  private build(): void {
+    const root = this.shadowRoot ?? this.attachShadow({ mode: 'open' });
+    this.builtFor = getLanguage();
+    const toggle = (name: string, label: string) =>
+      `<div class="row toggle"><label for="${name}">${label}</label><input type="checkbox" id="${name}" name="${name}"></div>`;
+    root.innerHTML = `<style>${STYLE}</style>
+    <form onsubmit="return false">
+      <h1>${t('settings')}</h1>
+      <fieldset><legend>${t('clef')}</legend>${seg('clef', [['treble', t('treble')], ['bass', t('bass')]])}</fieldset>
+      <fieldset><legend>${t('labels')}</legend>${seg('labels', [['none', t('none')], ['solfege', t('solfege')], ['letters', t('letters')], ['both', t('both')]])}</fieldset>
+      <fieldset><legend>${t('range')}</legend><div class="pair"><select name="rangeLow" aria-label="${t('lowestNote')}"></select><span>${t('to')}</span><select name="rangeHigh" aria-label="${t('highestNote')}"></select></div></fieldset>
+      <fieldset><legend>${t('accidentals')}</legend>${seg('accidentals', [['none', t('none')], ['sharps', t('sharps')], ['flats', t('flats')], ['both', t('both')]])}</fieldset>
+      <fieldset><legend>${t('speed')}</legend>${seg('speed', [['static', t('static')], ['20', t('bpm', { n: 20 })], ['40', t('bpm', { n: 40 })], ['80', t('bpm', { n: 80 })]])}</fieldset>
+      <fieldset><legend>${t('length')}</legend><div class="len"><span>${t('minutes')}</span><output></output></div><input type="range" name="lengthMin" min="1" max="10" step="1" aria-label="${t('lengthAria')}"></fieldset>
+      ${toggle('scaleStart', t('scaleStart'))}
+      ${toggle('pianoLabels', t('pianoLabels'))}
+      ${toggle('haptics', t('haptics'))}
+      <fieldset><legend>${t('language')}</legend><div class="pair"><select name="language" aria-label="${t('language')}">${LANGS.map((l) => `<option value="${l.code}">${l.name}</option>`).join('')}</select></div></fieldset>
+    </form>`;
+    if (!this.listening) {
+      this.listening = true;
+      root.addEventListener('change', (e) => this.onChange(e.target as HTMLInputElement));
+      root.addEventListener('input', (e) => {
+        const el = e.target as HTMLInputElement;
+        if (el.name === 'lengthMin') this.onChange(el);
+      });
+    }
+  }
+
+  private onChange(el: HTMLInputElement): void {
+    switch (el.name) {
+      case 'clef': return settingsStore.set({ clef: el.value as Clef });
+      case 'labels': return settingsStore.set({ labels: el.value as LabelMode });
+      case 'accidentals': return settingsStore.set({ accidentals: el.value as Accidentals });
+      case 'speed': return settingsStore.set({ speed: (el.value === 'static' ? 'static' : Number(el.value)) as Speed });
+      case 'rangeLow': return settingsStore.set({ rangeLow: el.value });
+      case 'rangeHigh': return settingsStore.set({ rangeHigh: el.value });
+      case 'lengthMin': return settingsStore.set({ lengthMin: Number(el.value) });
+      case 'scaleStart': return settingsStore.set({ scaleStart: el.checked });
+      case 'pianoLabels': return settingsStore.set({ pianoLabels: el.checked });
+      case 'haptics': return settingsStore.set({ haptics: el.checked });
+      case 'language': return settingsStore.set({ language: el.value as Lang });
     }
   }
 
@@ -102,11 +123,9 @@ export class KsSettingsView extends HTMLElement {
     fill('rangeHigh', opts.filter((o) => midiOf(parseNote(o)) > midiOf(parseNote(s.rangeLow))), s.rangeHigh);
     const slider = root.querySelector<HTMLInputElement>('input[name="lengthMin"]')!;
     slider.value = String(s.lengthMin);
-    root.querySelector('.len span')!.textContent = 'Minutes';
-    root.querySelector('.len output')!.textContent = `${s.lengthMin} min`;
-    root.querySelector<HTMLInputElement>('#scaleStart')!.checked = s.scaleStart;
-    root.querySelector<HTMLInputElement>('#pianoLabels')!.checked = s.pianoLabels;
-    root.querySelector<HTMLInputElement>('#haptics')!.checked = s.haptics;
+    root.querySelector('.len output')!.textContent = t('minShort', { n: s.lengthMin });
+    for (const id of ['scaleStart', 'pianoLabels', 'haptics'] as const) root.querySelector<HTMLInputElement>(`#${id}`)!.checked = s[id];
+    root.querySelector<HTMLSelectElement>('select[name="language"]')!.value = s.language;
   }
 }
 if (!customElements.get('ks-settings-view')) customElements.define('ks-settings-view', KsSettingsView);

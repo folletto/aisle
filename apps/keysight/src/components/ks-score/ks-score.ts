@@ -8,7 +8,7 @@
 //  - Timed mode: each note gets a linear WAAPI translateX animation; its end = reaching the clef = miss.
 //    Being time-based, frame drops cannot change tempo.
 import { Accidental, Renderer, Stave, StaveNote, TickContext } from 'vexflow/bravura';
-import { LabelMode, Note, formatLabel, midiOf } from '../../core/notes';
+import { LabelMode, Locale, Note, formatLabel, midiOf } from '../../core/notes';
 import { Clef } from '../../core/pool';
 import type { JudgeResult } from '../../core/session';
 import { LINE_GAP, Layout, computeLayout, noteOffsetY } from './layout';
@@ -36,7 +36,7 @@ svg { width: 100%; height: 100%; display: block; }
 `;
 
 export class KsScore extends HTMLElement {
-  static observedAttributes = ['clef', 'labels', 'range-low', 'range-high'];
+  static observedAttributes = ['clef', 'labels', 'locale', 'range-low', 'range-high'];
 
   /** Resolves once the music font is ready and the staff is drawn. */
   ready: Promise<void>;
@@ -69,6 +69,10 @@ export class KsScore extends HTMLElement {
   get labels(): LabelMode {
     const v = this.getAttribute('labels');
     return v === 'none' || v === 'solfege' || v === 'both' ? v : 'letters';
+  }
+  get locale(): Locale {
+    const v = this.getAttribute('locale');
+    return v === 'fr' || v === 'it' ? v : 'en';
   }
   get rangeLow(): string {
     return this.getAttribute('range-low') ?? (this.clef === 'bass' ? 'C3' : 'C4');
@@ -239,7 +243,7 @@ export class KsScore extends HTMLElement {
 
     const cx = (sn.getNoteHeadBeginX() + sn.getNoteHeadEndX()) / 2;
     const withLabel = opts.label ?? true;
-    const text = withLabel ? formatLabel(note, this.labels) : '';
+    const text = withLabel ? formatLabel(note, this.labels, this.locale) : '';
     if (text) {
       const noteY = this.layout!.topLineY + noteOffsetY(note, this.clef);
       const labelY = Math.max(noteY + 34, this.layout!.topLineY + 4 * LINE_GAP + 26);

@@ -14,6 +14,9 @@ export interface Note {
 export const LETTERS: Letter[] = ['C', 'D', 'E', 'F', 'G', 'A', 'B'];
 const SEMITONE: Record<Letter, number> = { C: 0, D: 2, E: 4, F: 5, G: 7, A: 9, B: 11 };
 const SOLFEGE: Record<Letter, string> = { C: 'Do', D: 'Re', E: 'Mi', F: 'Fa', G: 'Sol', A: 'La', B: 'Si' };
+/** French writes Ré; English and Italian share the same syllables. */
+export type Locale = 'en' | 'fr' | 'it';
+const solfegeName = (l: Letter, locale: Locale) => (locale === 'fr' && l === 'D' ? 'Ré' : SOLFEGE[l]);
 const SHARP_NAMES = ['C', 'C#', 'D', 'D#', 'E', 'F', 'F#', 'G', 'G#', 'A', 'A#', 'B'];
 const FLAT_NAMES = ['C', 'Db', 'D', 'Eb', 'E', 'F', 'Gb', 'G', 'Ab', 'A', 'Bb', 'B'];
 
@@ -53,16 +56,16 @@ export function isBlackKey(midi: number): boolean {
 const SYMBOL: Record<Accidental, string> = { '': '', '#': '♯', b: '♭' };
 
 /** Label shown under a note: "C♯ 4", "Do♯ 4", "Do♯ / C♯ 4". Empty when mode is none. */
-export function formatLabel(n: Note, mode: LabelMode): string {
+export function formatLabel(n: Note, mode: LabelMode, locale: Locale = 'en'): string {
   if (mode === 'none') return '';
   const letter = `${n.letter}${SYMBOL[n.accidental]}`;
-  const solfege = `${SOLFEGE[n.letter]}${SYMBOL[n.accidental]}`;
+  const solfege = `${solfegeName(n.letter, locale)}${SYMBOL[n.accidental]}`;
   const name = mode === 'letters' ? letter : mode === 'solfege' ? solfege : `${solfege} / ${letter}`;
   return `${name} ${n.octave}`;
 }
 
 /** Short label for a piano key (no octave): "C♯", "Do♯", "Do / C". Empty when mode is none. */
-export function formatKeyLabel(n: Note, mode: LabelMode): string {
-  const full = formatLabel(n, mode);
+export function formatKeyLabel(n: Note, mode: LabelMode, locale: Locale = 'en'): string {
+  const full = formatLabel(n, mode, locale);
   return full.replace(/ -?\d+$/, '');
 }

@@ -14,6 +14,7 @@ import { saveCompletedSession } from '../data/storage';
 import { settingsStore } from '../state';
 import { icon } from '../icons';
 import { hapticTick } from '../haptics';
+import { t } from '../i18n';
 
 const STYLE = `
 :host { display: grid; height: 100%; grid-template-rows: 1fr 1fr; background: #1b1d23; }
@@ -88,7 +89,7 @@ export class KsPlayView extends HTMLElement {
       for (const [el, n] of [[badgeL, left], [badgeR, right]] as const) {
         el.classList.toggle('on', n > 0);
         el.querySelector('b')!.textContent = String(n);
-        el.setAttribute('aria-label', `${n} notes of the range are off screen`);
+        el.setAttribute('aria-label', t('hiddenNotes', { n }));
       }
     });
     // Leaving the page mid-session counts as Stop.
@@ -111,6 +112,8 @@ export class KsPlayView extends HTMLElement {
     const s = settingsStore.get();
     this.score.setAttribute('clef', s.clef);
     this.score.setAttribute('labels', s.labels);
+    this.score.setAttribute('locale', s.language);
+    this.piano.setAttribute('locale', s.language);
     this.score.setAttribute('range-low', s.rangeLow);
     this.score.setAttribute('range-high', s.rangeHigh);
     this.piano.setAttribute('labels', s.labels);

@@ -1,6 +1,7 @@
 // Tab buttons: Play / Stop, Settings, Stats. Centred at the top.
 import { icon } from '../icons';
 import { Route } from '../router/router';
+import { t } from '../i18n';
 
 const STYLE = `
 :host { display: block; }
@@ -39,13 +40,18 @@ export class KsTabbar extends HTMLElement {
     this.render();
   }
 
+  /** Re-render, e.g. after a language change. */
+  refresh(): void {
+    this.render();
+  }
+
   private render(): void {
     const cur = (r: Route) => (this._route === r ? 'aria-current="page"' : '');
     this.shadowRoot!.innerHTML = `<style>${STYLE}</style>
-      <nav aria-label="Main">
-        <button class="play ${this._running ? 'running' : ''}" data-action="toggle" aria-label="${this._running ? 'Stop' : 'Play'}">${icon(this._running ? 'stop' : 'play')}</button>
-        <button data-action="/settings" aria-label="Settings" ${cur('/settings')}>${icon('settings')}</button>
-        <button data-action="/stats" aria-label="Stats" ${cur('/stats')}>${icon('stats')}</button>
+      <nav aria-label="${t('main')}">
+        <button class="play ${this._running ? 'running' : ''}" data-action="toggle" aria-label="${this._running ? t('stop') : t('play')}">${icon(this._running ? 'stop' : 'play')}</button>
+        <button data-action="/settings" aria-label="${t('settings')}" ${cur('/settings')}>${icon('settings')}</button>
+        <button data-action="/stats" aria-label="${t('stats')}" ${cur('/stats')}>${icon('stats')}</button>
       </nav>`;
   }
 }

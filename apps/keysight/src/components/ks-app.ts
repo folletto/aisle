@@ -6,6 +6,7 @@ import './ks-stats-view';
 import type { KsPlayView } from './ks-play-view';
 import type { KsTabbar } from './ks-tabbar';
 import { Route, Router } from '../router/router';
+import { settingsStore } from '../state';
 
 const VIEWS: Record<Route, string> = { '/play': 'ks-play-view', '/settings': 'ks-settings-view', '/stats': 'ks-stats-view' };
 
@@ -29,6 +30,7 @@ export class KsApp extends HTMLElement {
     this.router = new Router((route) => this.mount(route));
     this.addEventListener('ks-session-state', (e) => (this.bar.running = (e as CustomEvent).detail.running));
     this.addEventListener('ks-tab', (e) => this.onTab((e as CustomEvent).detail.action));
+    settingsStore.subscribe(() => this.bar.refresh());
     this.router.start();
   }
 

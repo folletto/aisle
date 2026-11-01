@@ -26,6 +26,7 @@ Vite + TypeScript, native Web Components (Custom Elements + Shadow DOM, no UI fr
 * Scale start is on by default; its notes count towards the score.
 * Haptics (`src/haptics.ts`): on-screen key press gives a 10 ms vibration (Android) or a best-effort iOS switch tick; toggle in Settings, on by default.
 * Stop, leaving the Play tab, or backgrounding the page aborts the session and saves nothing.
+* i18n (`src/i18n.ts`): English, French, Italian, no library. Add new keys to `en` first (TypeScript forces fr and it). First run picks the browser language if supported, else English. Language dropdown is at the bottom of Settings. Solfege is localised (French writes Ré) via the `locale` attribute on ks-score / ks-piano.
 * Stats tab (`core/stats.ts`, `ks-stats-view`): last 7 and 30 day averages and the 5 latest scores. Windows are calendar days anchored on the day of the most recent session, not today. The average is pooled (all notes hit / all notes asked), not a mean of session percentages.
 
 ## Testing
