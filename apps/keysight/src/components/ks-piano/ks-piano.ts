@@ -143,7 +143,6 @@ export class KsPiano extends HTMLElement {
       w.style.width = `${keyW}px`;
       const name = this.keyLabel(midi, false);
       if (name) w.innerHTML = `<span class="named">${name}${midi % 12 === 0 ? `<small>${Math.floor(midi / 12) - 1}</small>` : ''}</span>`;
-      else if (midi % 12 === 0) w.innerHTML = `<span>C${Math.floor(midi / 12) - 1}</span>`;
       frag.appendChild(w);
       // Black key between this white key and the next, if it exists and both are visible.
       const nextMidi = WHITE_MIDIS[idx + 1];
