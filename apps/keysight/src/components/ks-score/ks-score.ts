@@ -17,6 +17,7 @@ const SVG_NS = 'http://www.w3.org/2000/svg';
 const BASE_X = 80; // where VexFlow draws a note before we translate it
 const RED = '#d92d20';
 const GREEN = '#12a150';
+const GOLD = '#d49b00';
 
 interface Entry {
   note: Note;
@@ -150,7 +151,7 @@ export class KsScore extends HTMLElement {
     return { correct, expected: target.note, pressed };
   }
 
-  /** Streak number under the clef; null hides it. Survives relayouts. */
+  /** Streak (star + number, gold) under the clef; shown from 2 up, null hides it. Survives relayouts. */
   setStreak(n: number | null): void {
     this.streak = n;
     this.drawStreak();
@@ -233,7 +234,7 @@ export class KsScore extends HTMLElement {
 
   private drawStreak(): void {
     if (!this.svgEl || !this.stave || !this.layout) return;
-    if (this.streak === null) {
+    if (this.streak === null || this.streak < 2) {
       this.streakEl?.remove();
       this.streakEl = null;
       return;
@@ -247,14 +248,14 @@ export class KsScore extends HTMLElement {
       t.setAttribute('font-size', '16');
       t.setAttribute('font-family', 'system-ui, sans-serif');
       t.setAttribute('font-weight', '700');
-      t.setAttribute('fill', '#4a5060');
+      t.setAttribute('fill', GOLD);
       t.setAttribute('stroke', 'none');
       t.setAttribute('class', 'streak');
       t.style.fontVariantNumeric = 'tabular-nums';
       this.svgEl.appendChild(t);
       this.streakEl = t;
     }
-    this.streakEl.textContent = String(this.streak);
+    this.streakEl.textContent = `\u2605\uFE0E ${this.streak}`; // black star, forced to text (not emoji) presentation
   }
 
   /** Draw one note (stem, ledger lines, accidental, label) into its own group. */

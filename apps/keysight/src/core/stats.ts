@@ -14,6 +14,7 @@ export interface Stats<T extends SessionRecord = SessionRecord> {
   last7: Average | null;
   last30: Average | null;
   latest: T[]; // newest first, at most 5
+  longestStreak: number | null; // best ever; null when no session recorded one
 }
 
 const DAY = 86_400_000;
@@ -34,8 +35,10 @@ function average(list: SessionRecord[]): Average | null {
 /** `sessions` in any order. Window = the last `days` calendar days up to and including the latest session's day. */
 export function computeStats<T extends SessionRecord>(sessions: T[]): Stats<T> {
   const sorted = [...sessions].sort((a, b) => b.startedAt - a.startedAt);
-  if (!sorted.length) return { last7: null, last30: null, latest: [] };
+  if (!sorted.length) return { last7: null, last30: null, latest: [], longestStreak: null };
   const anchorDay = startOfDay(sorted[0].startedAt);
   const within = (days: number) => sorted.filter((s) => startOfDay(s.startedAt) > anchorDay - days * DAY + DAY / 2);
-  return { last7: average(within(7)), last30: average(within(30)), latest: sorted.slice(0, 5) };
+  const streaks = sorted.map((x) => x.bestStreak).filter((n): n is number => typeof n === 'number');
+  const longestStreak = streaks.length ? Math.max(...streaks) : null;
+  return { last7: average(within(7)), last30: average(within(30)), latest: sorted.slice(0, 5), longestStreak };
 }

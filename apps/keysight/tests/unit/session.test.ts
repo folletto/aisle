@@ -144,5 +144,7 @@ describe('timed session', () => {
     hit(600);
     expect(e.streak).toBe(1);
     expect(score.streaks[0]).toBe(0);
+    expect(e.bestStreak).toBe(3);
+    expect(e.record().bestStreak).toBe(3);
   });
 });

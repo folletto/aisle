@@ -29,6 +29,7 @@ Vite + TypeScript, native Web Components (Custom Elements + Shadow DOM, no UI fr
 * Key sound (`src/sound.ts`): Web Audio triangle-wave note per press (touch and computer keyboard, via the input bus), no audio files. Toggle in Settings, off by default.
 * Stop, leaving the Play tab, or backgrounding the page aborts the session and saves nothing.
 * i18n (`src/i18n.ts`): English, French, Italian, no library. Add new keys to `en` first (TypeScript forces fr and it). First run picks the browser language if supported, else English. Language dropdown is at the bottom of Settings. Solfege is localised (French writes Ré) via the `locale` attribute on ks-score / ks-piano.
+* Streak: shown under the clef from 2 up as a gold ★ (text presentation) plus number; the session record stores `bestStreak` (absent on older sessions). Stats shows the longest streak ever on top and the best per session in the latest list.
 * Stats tab (`core/stats.ts`, `ks-stats-view`): last 7 and 30 day averages and the 5 latest scores. Windows are calendar days anchored on the day of the most recent session, not today. The average is pooled (all notes hit / all notes asked), not a mean of session percentages.
 
 ## Testing

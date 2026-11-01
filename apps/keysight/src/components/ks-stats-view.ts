@@ -11,6 +11,7 @@ const STYLE = `
 h1 { margin: 0 0 4px; font-size: 22px; }
 h2 { margin: 0 0 8px; font-size: 12px; font-weight: 700; letter-spacing: .05em; text-transform: uppercase; color: #6b7080; }
 .card { border: 1px solid #dfe2ea; border-radius: 14px; background: #fff; padding: 14px; }
+.gold { color: #d49b00; }
 .avgs { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
 .big { font-size: 34px; font-weight: 700; line-height: 1.1; }
 .sub { margin-top: 4px; font-size: 13px; color: #6b7080; }
@@ -20,6 +21,7 @@ td { text-align: right; padding: 8px 0 8px 8px; border-top: 1px solid #eef0f6; f
 th:first-child, td:first-child { text-align: left; padding-left: 0; }
 td:first-child { color: #4a5060; font-size: 13px; }
 td.pct { font-weight: 700; }
+td.streak { color: #4a5060; }
 td.del, th.del { width: 36px; padding-left: 4px; }
 .del button { display: inline-flex; align-items: center; justify-content: center; width: 32px; height: 32px; border: 0; border-radius: 8px; background: transparent; color: #6b7080; cursor: pointer; -webkit-tap-highlight-color: transparent; }
 .del button:hover { background: #eef0f6; color: #d92d20; }
@@ -35,6 +37,12 @@ function avgCard(title: string, a: Average | null): string {
     a
       ? `<div class="big">${a.percent}%</div><div class="sub">${t('notesOf', { c: a.correct, t: a.total })} · ${sessionsLabel(a.sessions)}</div>`
       : `<div class="big">–</div><div class="sub">${t('noSessionsShort')}</div>`
+  }</div>`;
+}
+
+function streakCard(n: number | null): string {
+  return `<div class="card"><h2>${t('longestStreak')}</h2>${
+    n === null ? `<div class="big">–</div>` : `<div class="big gold">\u2605\uFE0E ${n}</div><div class="sub">${t('inARow', { n })}</div>`
   }</div>`;
 }
 
@@ -62,15 +70,15 @@ export class KsStatsView extends HTMLElement {
       const stats = computeStats(await listSessions());
       if (!this.isConnected) return;
       body = stats.latest.length
-        ? `<div class="avgs">${avgCard(t('last7'), stats.last7)}${avgCard(t('last30'), stats.last30)}</div>
+        ? `${streakCard(stats.longestStreak)}<div class="avgs">${avgCard(t('last7'), stats.last7)}${avgCard(t('last30'), stats.last30)}</div>
            <div class="card"><h2>${t('latest')}</h2><table>
-             <tr><th>${t('when')}</th><th>${t('hit')}</th><th>${t('total')}</th><th>%</th><th class="del"></th></tr>
+             <tr><th>${t('when')}</th><th>${t('hit')}</th><th>${t('total')}</th><th>%</th><th>${t('streak')}</th><th class="del"></th></tr>
              ${stats.latest
                .map((s) => {
                  const when = new Date(s.startedAt).toLocaleDateString(getLanguage(), { day: 'numeric', month: 'short' });
                  const mode = s.mode === 'static' ? t('static') : t('bpm', { n: s.mode });
                  const del = s.id === undefined ? '' : `<button type="button" data-delete="${s.id}" aria-label="${t('deleteScore')}" title="${t('deleteScore')}">${icon('trash', 16)}</button>`;
-                 return `<tr><td>${esc(when)} · ${esc(mode)}</td><td>${s.correct}</td><td>${s.total}</td><td class="pct">${s.percent}%</td><td class="del">${del}</td></tr>`;
+                 return `<tr><td>${esc(when)} · ${esc(mode)}</td><td>${s.correct}</td><td>${s.total}</td><td class="pct">${s.percent}%</td><td class="streak">${s.bestStreak === undefined ? '–' : s.bestStreak}</td><td class="del">${del}</td></tr>`;
                })
                .join('')}
            </table></div>`

@@ -52,6 +52,8 @@ export interface SessionRecord extends SessionResult {
   accidentals: string;
   labels: string;
   scaleStart: boolean;
+  /** Longest run of notes hit with no mistake. Missing on sessions saved before this was tracked. */
+  bestStreak?: number;
 }
 
 interface Target {
@@ -78,6 +80,8 @@ export class SessionEngine {
   private correct = 0;
   /** Notes hit in a row with no mistake. */
   streak = 0;
+  /** Longest streak so far in this session. */
+  bestStreak = 0;
   private total = 0;
   private startedAtWall = 0;
   private endedAtWall = 0;
@@ -106,6 +110,7 @@ export class SessionEngine {
     this.nextSpawn = now;
     this.startedAtWall = wallClock;
     this.streak = 0;
+    this.bestStreak = 0;
     this.score.clear();
     this.score.setStreak?.(0);
     this.score.start();
@@ -205,6 +210,7 @@ export class SessionEngine {
       accidentals: s.accidentals,
       labels: s.showLabels === 'note' || s.showLabels === 'both' ? s.labels : 'none',
       scaleStart: s.scaleStart,
+      bestStreak: this.bestStreak,
     };
   }
 
@@ -219,6 +225,7 @@ export class SessionEngine {
 
   private setStreak(n: number): void {
     this.streak = n;
+    this.bestStreak = Math.max(this.bestStreak, n);
     this.score.setStreak?.(n);
   }
 

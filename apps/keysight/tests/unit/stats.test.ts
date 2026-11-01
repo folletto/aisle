@@ -10,7 +10,7 @@ const s = (startedAt: number, correct: number, total: number): SessionRecord => 
 
 describe('computeStats', () => {
   it('handles no sessions', () => {
-    expect(computeStats([])).toEqual({ last7: null, last30: null, latest: [] });
+    expect(computeStats([])).toEqual({ last7: null, last30: null, latest: [], longestStreak: null });
   });
   it('anchors the windows on the last session, not today', () => {
     // last session is on 20 Jan (months before "now"); 14 Jan is 6 days earlier (in), 13 Jan is 7 days earlier (out)
@@ -26,5 +26,10 @@ describe('computeStats', () => {
   it('returns the 5 latest, newest first', () => {
     const list = Array.from({ length: 8 }, (_, i) => s(day(i + 1), i, 10));
     expect(computeStats(list).latest.map((x) => x.correct)).toEqual([7, 6, 5, 4, 3]);
+  });
+  it('reports the longest streak ever, ignoring sessions that did not record one', () => {
+    const list = [{ ...s(day(3), 5, 10), bestStreak: 4 }, { ...s(day(2), 5, 10), bestStreak: 9 }, s(day(1), 5, 10)];
+    expect(computeStats(list).longestStreak).toBe(9);
+    expect(computeStats([s(day(1), 5, 10)]).longestStreak).toBeNull();
   });
 });
