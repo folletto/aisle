@@ -105,6 +105,25 @@
           "#0F9D58"
         ]
       }
+    },
+    {
+      "name": "KeySight",
+      "description": "Piano sight-reading trainer: read the note, press the key",
+      "folder": "keysight",
+      "url": "https://aisle-keysight.netlify.app",
+      "siteId": "b5694369-dd88-4279-99e5-4b2cc79cd56b",
+      "tags": [
+        "music",
+        "piano",
+        "learning"
+      ],
+      "launcher": {
+        "icon": "KeyboardMusic",
+        "colors": [
+          "#1d4ed8",
+          "#60a5fa"
+        ]
+      }
     }
   ]
 }
