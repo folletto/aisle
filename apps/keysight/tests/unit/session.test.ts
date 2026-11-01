@@ -84,6 +84,17 @@ describe('static session', () => {
     expect(seen).toEqual(['C4', 'D4', 'E4', 'F4', 'G4', 'A4', 'B4']);
     expect(e.result().total).toBe(7);
   });
+  it('the opening scale does not count towards the streak', () => {
+    const score = new FakeScore();
+    const e = new SessionEngine(settings({ scaleStart: true }), score, createRng(1));
+    e.start(0);
+    for (let i = 0; i < 7; i++) e.press(press(score.shown!), i * 10); // the scale
+    expect(e.streak).toBe(0);
+    expect(e.bestStreak).toBe(0);
+    e.press(press(score.shown!), 100);
+    e.press(press(score.shown!), 110);
+    expect(e.streak).toBe(2);
+  });
   it('accepts either spelling of a black key', () => {
     const score = new FakeScore();
     const e = new SessionEngine(settings({ accidentals: 'both' }), score, createRng(2));

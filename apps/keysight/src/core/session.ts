@@ -60,6 +60,8 @@ interface Target {
   note: Note;
   since: number;
   wrong: boolean;
+  /** Part of the opening scale: counts for the score but not for the streak. */
+  scale: boolean;
 }
 
 export type SessionState = 'idle' | 'running' | 'finished' | 'stopped';
@@ -129,8 +131,8 @@ export class SessionEngine {
     if (bpm === null) return;
     const interval = 60_000 / bpm;
     while (now >= this.nextSpawn && this.nextSpawn < this.endAt) {
-      const note = this.nextNote();
-      this.pending.push({ note, since: this.nextSpawn, wrong: false });
+      const { note, scale } = this.nextNote();
+      this.pending.push({ note, since: this.nextSpawn, wrong: false, scale });
       this.score.enqueue([note], { bpm });
       this.nextSpawn += interval;
     }
@@ -151,13 +153,13 @@ export class SessionEngine {
     });
     if (!result.correct) {
       target.wrong = true;
-      this.setStreak(0);
+      if (!target.scale) this.setStreak(0);
       return;
     }
     this.total++;
     if (!target.wrong) {
       this.correct++;
-      this.setStreak(this.streak + 1);
+      if (!target.scale) this.setStreak(this.streak + 1);
     }
     this.pending.shift();
     if (this.bpm === null) this.showNext(now);
@@ -169,7 +171,7 @@ export class SessionEngine {
     const target = this.pending.shift();
     if (!target) return;
     this.total++;
-    this.setStreak(0);
+    if (!target.scale) this.setStreak(0);
     this.events.push({
       t: now - this.startAt,
       expected: noteName(target.note),
@@ -229,15 +231,16 @@ export class SessionEngine {
     this.score.setStreak?.(n);
   }
 
-  private nextNote(): Note {
-    const note = this.queued.length ? this.queued.shift()! : pickNote(this.pool, this.prev, this.rng);
+  private nextNote(): { note: Note; scale: boolean } {
+    const scale = this.queued.length > 0;
+    const note = scale ? this.queued.shift()! : pickNote(this.pool, this.prev, this.rng);
     this.prev = note;
-    return note;
+    return { note, scale };
   }
 
   private showNext(now: number): void {
-    const note = this.nextNote();
-    this.pending = [{ note, since: now, wrong: false }];
+    const { note, scale } = this.nextNote();
+    this.pending = [{ note, since: now, wrong: false, scale }];
     this.score.showNote(note);
   }
 }
