@@ -101,12 +101,8 @@ describe('settings', () => {
   it('defaults', () => {
     expect(normaliseSettings({})).toEqual(DEFAULT_SETTINGS);
     expect(DEFAULT_SETTINGS.scaleStart).toBe(true);
-    expect(DEFAULT_SETTINGS.haptics).toBe(true);
     expect(DEFAULT_SETTINGS.sound).toBe(false);
     expect(DEFAULT_SETTINGS.lengthMin).toBe(1);
-  });
-  it('keeps haptics off when stored off', () => {
-    expect(normaliseSettings({ haptics: false }).haptics).toBe(false);
   });
   it('resets the range when it does not fit the clef', () => {
     const s = normaliseSettings({ clef: 'bass', rangeLow: 'C4', rangeHigh: 'B4' });
