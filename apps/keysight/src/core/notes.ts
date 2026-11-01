@@ -60,3 +60,9 @@ export function formatLabel(n: Note, mode: LabelMode): string {
   const name = mode === 'letters' ? letter : mode === 'solfege' ? solfege : `${solfege} / ${letter}`;
   return `${name} ${n.octave}`;
 }
+
+/** Short label for a piano key (no octave): "C♯", "Do♯", "Do / C". Empty when mode is none. */
+export function formatKeyLabel(n: Note, mode: LabelMode): string {
+  const full = formatLabel(n, mode);
+  return full.replace(/ -?\d+$/, '');
+}

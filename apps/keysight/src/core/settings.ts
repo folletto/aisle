@@ -13,6 +13,8 @@ export interface Settings {
   speed: Speed;
   lengthMin: number;
   scaleStart: boolean;
+  /** Show key names on the piano keys, formatted like the Labels setting. */
+  pianoLabels: boolean;
 }
 
 export const DEFAULT_SETTINGS: Settings = {
@@ -23,7 +25,8 @@ export const DEFAULT_SETTINGS: Settings = {
   accidentals: 'none',
   speed: 'static',
   lengthMin: 2,
-  scaleStart: false,
+  scaleStart: true,
+  pianoLabels: false,
 };
 
 export function rangeIsValid(clef: Clef, low: string, high: string): boolean {
@@ -40,6 +43,7 @@ export function normaliseSettings(input: Partial<Settings> | undefined): Setting
   if (![ 'static', 20, 40, 80].includes(s.speed)) s.speed = 'static';
   s.lengthMin = Math.min(10, Math.max(1, Math.round(Number.isFinite(Number(s.lengthMin)) ? Number(s.lengthMin) : DEFAULT_SETTINGS.lengthMin)));
   s.scaleStart = Boolean(s.scaleStart);
+  s.pianoLabels = Boolean(s.pianoLabels);
   if (!rangeIsValid(s.clef, s.rangeLow, s.rangeHigh)) {
     s.rangeLow = CLEFS[s.clef].defaultLow;
     s.rangeHigh = CLEFS[s.clef].defaultHigh;

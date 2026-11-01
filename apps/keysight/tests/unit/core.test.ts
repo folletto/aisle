@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { diatonicIndex, formatLabel, midiOf, noteFromMidi, noteName, parseNote } from '../../src/core/notes';
+import { diatonicIndex, formatKeyLabel, formatLabel, midiOf, noteFromMidi, noteName, parseNote } from '../../src/core/notes';
 import { buildPool, createRng, pickNote, rangeOptions, whiteNotesBetween } from '../../src/core/pool';
 import { DEFAULT_SETTINGS, normaliseSettings, updateSettings } from '../../src/core/settings';
 import { centredStart, clampVisible, defaultVisible, hiddenCounts, pinchVisible } from '../../src/core/keyboard';
@@ -23,6 +23,11 @@ describe('notes', () => {
     expect(formatLabel(n('C4'), 'both')).toBe('Do / C 4');
     expect(formatLabel(n('Eb4'), 'both')).toBe('Mi♭ / E♭ 4');
     expect(formatLabel(n('C4'), 'none')).toBe('');
+  });
+  it('formats piano key labels without the octave', () => {
+    expect(formatKeyLabel(n('C#4'), 'letters')).toBe('C♯');
+    expect(formatKeyLabel(n('E4'), 'both')).toBe('Mi / E');
+    expect(formatKeyLabel(n('E4'), 'none')).toBe('');
   });
   it('rejects bad names', () => expect(() => parseNote('H9')).toThrow());
 });
@@ -95,6 +100,7 @@ describe('pool and generator', () => {
 describe('settings', () => {
   it('defaults', () => {
     expect(normaliseSettings({})).toEqual(DEFAULT_SETTINGS);
+    expect(DEFAULT_SETTINGS.scaleStart).toBe(true);
   });
   it('resets the range when it does not fit the clef', () => {
     const s = normaliseSettings({ clef: 'bass', rangeLow: 'C4', rangeHigh: 'B4' });

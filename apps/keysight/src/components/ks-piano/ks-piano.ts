@@ -12,7 +12,7 @@ import {
   hiddenCounts,
   pinchVisible,
 } from '../../core/keyboard';
-import { midiOf, parseNote } from '../../core/notes';
+import { LabelMode, formatKeyLabel, midiOf, noteFromMidi, parseNote } from '../../core/notes';
 import { whiteNotesBetween } from '../../core/pool';
 
 const STYLE = `
@@ -28,12 +28,15 @@ const STYLE = `
 .white.dim { background: #eceef3; }
 .white span { position: absolute; bottom: 8px; left: 0; right: 0; text-align: center; font: 600 11px system-ui, sans-serif; color: #7a8090; pointer-events: none; }
 .black { top: 0; height: 62%; background: #15161a; border-radius: 0 0 5px 5px; z-index: 2; box-shadow: inset 0 -6px 0 #2c2f38; }
+.white small { font-size: 9px; margin-left: 1px; opacity: .8; }
+.white span.named { font-size: 12px; color: #3b4050; }
+.black span { position: absolute; bottom: 7px; left: 0; right: 0; text-align: center; font: 600 10px system-ui, sans-serif; color: #cfd3de; pointer-events: none; overflow: hidden; }
 .down.white { background: #8fd0ff; }
 .down.black { background: #2f8fd8; }
 `;
 
 export class KsPiano extends HTMLElement {
-  static observedAttributes = ['range-low', 'range-high', 'locked'];
+  static observedAttributes = ['range-low', 'range-high', 'locked', 'labels', 'show-labels', 'accidentals'];
 
   private keysEl: HTMLDivElement;
   private ro: ResizeObserver;
@@ -92,7 +95,9 @@ export class KsPiano extends HTMLElement {
   }
   attributeChangedCallback(name: string): void {
     if (name === 'locked') return;
-    if (this.initialised) this.fitToRange();
+    if (!this.initialised) return;
+    if (name === 'labels' || name === 'show-labels' || name === 'accidentals') this.render();
+    else this.fitToRange();
   }
 
   /** Light a key from outside (computer keyboard presses). */
@@ -136,7 +141,9 @@ export class KsPiano extends HTMLElement {
       w.dataset.midi = String(midi);
       w.style.left = `${i * keyW}px`;
       w.style.width = `${keyW}px`;
-      if (midi % 12 === 0) w.innerHTML = `<span>C${Math.floor(midi / 12) - 1}</span>`;
+      const name = this.keyLabel(midi, false);
+      if (name) w.innerHTML = `<span class="named">${name}${midi % 12 === 0 ? `<small>${Math.floor(midi / 12) - 1}</small>` : ''}</span>`;
+      else if (midi % 12 === 0) w.innerHTML = `<span>C${Math.floor(midi / 12) - 1}</span>`;
       frag.appendChild(w);
       // Black key between this white key and the next, if it exists and both are visible.
       const nextMidi = WHITE_MIDIS[idx + 1];
@@ -145,6 +152,8 @@ export class KsPiano extends HTMLElement {
         b.className = 'key black';
         b.dataset.midi = String(midi + 1);
         const bw = keyW * 0.6;
+        const bname = this.keyLabel(midi + 1, true);
+        if (bname) b.innerHTML = `<span>${bname}</span>`;
         b.style.width = `${bw}px`;
         b.style.left = `${(i + 1) * keyW - bw / 2}px`;
         frag.appendChild(b);
@@ -153,6 +162,16 @@ export class KsPiano extends HTMLElement {
     this.keysEl.replaceChildren(frag);
     const { left, right } = hiddenCounts(low, high, this.start, this.visible);
     this.dispatchEvent(new CustomEvent('ks-window-change', { detail: { left, right }, bubbles: true, composed: true }));
+  }
+
+  /** Key name matching the Labels setting, or '' when key names are off. */
+  private keyLabel(midi: number, black: boolean): string {
+    if (!this.hasAttribute('show-labels')) return '';
+    const attr = this.getAttribute('labels');
+    let mode: LabelMode = attr === 'none' || attr === 'solfege' || attr === 'both' ? attr : 'letters';
+    if (black && mode === 'both') mode = 'letters'; // two names would not fit a black key
+    const note = noteFromMidi(midi, this.getAttribute('accidentals') === 'flats' ? 'b' : '#');
+    return formatKeyLabel(note, mode);
   }
 
   private midiAt(e: PointerEvent): number | null {

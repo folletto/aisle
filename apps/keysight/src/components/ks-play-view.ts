@@ -111,6 +111,9 @@ export class KsPlayView extends HTMLElement {
     this.score.setAttribute('labels', s.labels);
     this.score.setAttribute('range-low', s.rangeLow);
     this.score.setAttribute('range-high', s.rangeHigh);
+    this.piano.setAttribute('labels', s.labels);
+    this.piano.setAttribute('accidentals', s.accidentals);
+    this.piano.toggleAttribute('show-labels', s.pianoLabels);
     this.piano.setAttribute('range-low', s.rangeLow);
     this.piano.setAttribute('range-high', s.rangeHigh);
   }

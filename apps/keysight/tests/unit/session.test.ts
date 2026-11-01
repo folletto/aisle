@@ -25,7 +25,7 @@ class FakeScore implements ScoreLike {
   }
 }
 const press = (n: Note): KeyPress => ({ note: n, midi: midiOf(n), source: 'keyboard', timestamp: 0 });
-const settings = (s: Partial<Settings>): Settings => ({ ...DEFAULT_SETTINGS, ...s });
+const settings = (s: Partial<Settings>): Settings => ({ ...DEFAULT_SETTINGS, scaleStart: false, ...s });
 const wrongNote = (t: Note) => noteFromMidi(midiOf(t) === 71 ? 60 : 71);
 
 describe('static session', () => {

@@ -51,6 +51,7 @@ export class KsSettingsView extends HTMLElement {
       <fieldset><legend>Speed</legend>${seg('speed', [['static', 'Static'], ['20', '20 bpm'], ['40', '40 bpm'], ['80', '80 bpm']])}</fieldset>
       <fieldset><legend>Length</legend><div class="len"><span></span><output></output></div><input type="range" name="lengthMin" min="1" max="10" step="1" aria-label="Session length in minutes"></fieldset>
       <div class="row toggle"><label for="scaleStart">Scale start</label><input type="checkbox" id="scaleStart" name="scaleStart"></div>
+      <div class="row toggle"><label for="pianoLabels">Key names on piano</label><input type="checkbox" id="pianoLabels" name="pianoLabels"></div>
     </form>`;
     root.addEventListener('change', (e) => this.onChange(e.target as HTMLInputElement));
     root.addEventListener('input', (e) => {
@@ -75,6 +76,7 @@ export class KsSettingsView extends HTMLElement {
       case 'rangeHigh': return settingsStore.set({ rangeHigh: t.value });
       case 'lengthMin': return settingsStore.set({ lengthMin: Number(t.value) });
       case 'scaleStart': return settingsStore.set({ scaleStart: t.checked });
+      case 'pianoLabels': return settingsStore.set({ pianoLabels: t.checked });
     }
   }
 
@@ -101,6 +103,7 @@ export class KsSettingsView extends HTMLElement {
     root.querySelector('.len span')!.textContent = 'Minutes';
     root.querySelector('.len output')!.textContent = `${s.lengthMin} min`;
     root.querySelector<HTMLInputElement>('#scaleStart')!.checked = s.scaleStart;
+    root.querySelector<HTMLInputElement>('#pianoLabels')!.checked = s.pianoLabels;
   }
 }
 if (!customElements.get('ks-settings-view')) customElements.define('ks-settings-view', KsSettingsView);
