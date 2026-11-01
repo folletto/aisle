@@ -14,14 +14,15 @@ import { saveCompletedSession } from '../data/storage';
 import { settingsStore } from '../state';
 import { icon } from '../icons';
 import { hapticTick } from '../haptics';
+import { playNote } from '../sound';
 import { t } from '../i18n';
 
 const STYLE = `
 :host { display: grid; height: 100%; grid-template-rows: 1fr 1fr; background: #1b1d23; }
-@media (orientation: landscape) { :host { grid-template-rows: 1fr 2fr; } }
+@media (orientation: landscape) { :host { grid-template-rows: 1fr 2fr; background: #fff; padding-right: env(safe-area-inset-right); box-sizing: border-box; } }
 .score-area { position: relative; background: #fff; min-height: 0; }
 ks-score { position: absolute; inset: 0; top: calc(56px + env(safe-area-inset-top)); }
-@media (orientation: landscape) { ks-score { top: calc(50px + env(safe-area-inset-top)); } }
+@media (orientation: landscape) { ks-score { top: env(safe-area-inset-top); } .count { top: calc(6px + env(safe-area-inset-top)); right: 16px; } .badge.right { right: 8px; } }
 ks-results { position: absolute; inset: 0; z-index: 3; }
 .count { position: absolute; top: calc(14px + env(safe-area-inset-top)); right: calc(16px + env(safe-area-inset-right));
   font: 600 15px system-ui, sans-serif; font-variant-numeric: tabular-nums; color: #4a5060; }
@@ -65,6 +66,9 @@ export class KsPlayView extends HTMLElement {
 
     this.applySettings();
     this.cleanups.push(settingsStore.subscribe(() => this.applySettings()));
+
+    // Key sound for both touch and computer keyboard presses
+    this.cleanups.push(this.bus.onPress((kp) => settingsStore.get().sound && playNote(kp.midi)));
 
     // Piano touches -> bus
     this.piano.addEventListener('ks-key-down', (e) => {

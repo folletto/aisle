@@ -18,6 +18,8 @@ export interface Settings {
   pianoLabels: boolean;
   /** Haptic tick when a piano key is pressed (where supported). */
   haptics: boolean;
+  /** Play a note when a key is pressed. */
+  sound: boolean;
   language: Lang;
 }
 
@@ -32,6 +34,7 @@ export const DEFAULT_SETTINGS: Settings = {
   scaleStart: true,
   pianoLabels: false,
   haptics: true,
+  sound: false,
   language: 'en',
 };
 
@@ -52,6 +55,7 @@ export function normaliseSettings(input: Partial<Settings> | undefined): Setting
   s.pianoLabels = Boolean(s.pianoLabels);
   if (!isLang(s.language)) s.language = DEFAULT_SETTINGS.language;
   s.haptics = typeof s.haptics === 'boolean' ? s.haptics : DEFAULT_SETTINGS.haptics;
+  s.sound = typeof s.sound === 'boolean' ? s.sound : DEFAULT_SETTINGS.sound;
   if (!rangeIsValid(s.clef, s.rangeLow, s.rangeHigh)) {
     s.rangeLow = CLEFS[s.clef].defaultLow;
     s.rangeHigh = CLEFS[s.clef].defaultHigh;

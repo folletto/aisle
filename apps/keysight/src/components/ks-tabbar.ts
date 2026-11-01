@@ -1,4 +1,4 @@
-// Tab buttons: Play / Stop, Settings, Stats. Centred at the top.
+// Tab buttons: Play / Stop, Settings, Stats. Centred at the top in portrait, a vertical strip on the left in landscape.
 import { icon } from '../icons';
 import { Route } from '../router/router';
 import { t } from '../i18n';
@@ -12,6 +12,7 @@ button { display: flex; align-items: center; justify-content: center; width: 52p
 button[aria-current="page"] { background: #e8eefc; color: #1d4ed8; }
 button.play { background: #1d4ed8; color: #fff; }
 button.play.running { background: #d92d20; }
+@media (orientation: landscape) { nav { flex-direction: column; } }
 button:focus-visible { outline: 2px solid #1d4ed8; outline-offset: 2px; }
 `;
 

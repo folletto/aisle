@@ -15,6 +15,10 @@ const STYLE = `
 ks-tabbar { position: absolute; top: calc(8px + env(safe-area-inset-top)); left: 50%; transform: translateX(-50%); z-index: 10; }
 main { position: absolute; inset: 0; }
 main > * { height: 100%; }
+@media (orientation: landscape) {
+  ks-tabbar { top: 50%; left: calc(8px + env(safe-area-inset-left)); transform: translateY(-50%); }
+  main { left: calc(86px + env(safe-area-inset-left)); }
+}
 `;
 
 export class KsApp extends HTMLElement {
