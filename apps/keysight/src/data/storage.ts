@@ -47,6 +47,20 @@ export async function saveCompletedSession(session: SessionRecord, events: Event
   }
 }
 
+/** Delete one recorded session together with its key events. */
+export async function deleteSession(id: number): Promise<boolean> {
+  try {
+    await db.transaction('rw', db.sessions, db.events, async () => {
+      await db.events.where('sessionId').equals(id).delete();
+      await db.sessions.delete(id);
+    });
+    return true;
+  } catch (err) {
+    console.warn('Could not delete session', err);
+    return false;
+  }
+}
+
 export interface SessionFilter {
   mode?: 'static' | number;
   since?: number;

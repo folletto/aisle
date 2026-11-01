@@ -10,10 +10,10 @@ export interface Average {
   total: number;
 }
 
-export interface Stats {
+export interface Stats<T extends SessionRecord = SessionRecord> {
   last7: Average | null;
   last30: Average | null;
-  latest: SessionRecord[]; // newest first, at most 5
+  latest: T[]; // newest first, at most 5
 }
 
 const DAY = 86_400_000;
@@ -32,7 +32,7 @@ function average(list: SessionRecord[]): Average | null {
 }
 
 /** `sessions` in any order. Window = the last `days` calendar days up to and including the latest session's day. */
-export function computeStats(sessions: SessionRecord[]): Stats {
+export function computeStats<T extends SessionRecord>(sessions: T[]): Stats<T> {
   const sorted = [...sessions].sort((a, b) => b.startedAt - a.startedAt);
   if (!sorted.length) return { last7: null, last30: null, latest: [] };
   const anchorDay = startOfDay(sorted[0].startedAt);

@@ -1,7 +1,7 @@
 import 'fake-indexeddb/auto';
 import { beforeEach, describe, expect, it } from 'vitest';
 import { KeySightDB } from '../../src/data/db';
-import { getSettings, listSessions, saveCompletedSession, saveSettings, useDatabase } from '../../src/data/storage';
+import { deleteSession, getSettings, listSessions, saveCompletedSession, saveSettings, useDatabase } from '../../src/data/storage';
 import { DEFAULT_SETTINGS } from '../../src/core/settings';
 import { SessionRecord } from '../../src/core/session';
 
@@ -28,5 +28,12 @@ describe('storage', () => {
     expect(all.map((s) => s.startedAt)).toEqual([5000, 1000]);
     expect(await listSessions({ mode: 40 })).toHaveLength(1);
     expect(await listSessions({ since: 2000 })).toHaveLength(1);
+  });
+  it('deletes a single session and its events', async () => {
+    const ev = [{ t: 1, expected: 'C4', pressed: 'C4', correct: true, reactionMs: 400, source: 'touch' as const }];
+    const a = await saveCompletedSession(record({ startedAt: 1000 }), ev);
+    await saveCompletedSession(record({ startedAt: 5000 }), ev);
+    expect(await deleteSession(a!)).toBe(true);
+    expect((await listSessions()).map((x) => x.startedAt)).toEqual([5000]);
   });
 });
