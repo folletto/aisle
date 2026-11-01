@@ -122,6 +122,19 @@ describe('settings', () => {
     expect(normaliseSettings({ lengthMin: 99 }).lengthMin).toBe(10);
     expect(normaliseSettings({ lengthMin: 0 }).lengthMin).toBe(1);
   });
+  it('validates showLabels and keeps a real label format', () => {
+    expect(DEFAULT_SETTINGS.showLabels).toBe('note');
+    expect(normaliseSettings({ showLabels: 'key' }).showLabels).toBe('key');
+    expect(normaliseSettings({ showLabels: 'x' as never }).showLabels).toBe('note');
+    expect(normaliseSettings({ showLabels: 'none', labels: 'none' }).labels).toBe('letters');
+  });
+  it('migrates the old labels / pianoLabels settings', () => {
+    const old = (o: object) => normaliseSettings(o as never);
+    expect(old({ labels: 'none', pianoLabels: true }).showLabels).toBe('none');
+    expect(old({ labels: 'solfege', pianoLabels: false })).toMatchObject({ showLabels: 'note', labels: 'solfege' });
+    expect(old({ labels: 'both', pianoLabels: true })).toMatchObject({ showLabels: 'both', labels: 'both' });
+    expect('pianoLabels' in old({ pianoLabels: true })).toBe(false);
+  });
 });
 
 describe('keyboard fit and pinch', () => {

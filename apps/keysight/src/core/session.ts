@@ -191,7 +191,7 @@ export class SessionEngine {
       clef: s.clef,
       range: `${s.rangeLow}-${s.rangeHigh}`,
       accidentals: s.accidentals,
-      labels: s.labels,
+      labels: s.showLabels === 'note' || s.showLabels === 'both' ? s.labels : 'none',
       scaleStart: s.scaleStart,
     };
   }

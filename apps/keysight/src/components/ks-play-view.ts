@@ -119,14 +119,14 @@ export class KsPlayView extends HTMLElement {
   private applySettings(): void {
     const s = settingsStore.get();
     this.score.setAttribute('clef', s.clef);
-    this.score.setAttribute('labels', s.labels);
+    this.score.setAttribute('labels', s.showLabels === 'note' || s.showLabels === 'both' ? s.labels : 'none');
     this.score.setAttribute('locale', s.language);
     this.piano.setAttribute('locale', s.language);
     this.score.setAttribute('range-low', s.rangeLow);
     this.score.setAttribute('range-high', s.rangeHigh);
     this.piano.setAttribute('labels', s.labels);
     this.piano.setAttribute('accidentals', s.accidentals);
-    this.piano.toggleAttribute('show-labels', s.pianoLabels);
+    this.piano.toggleAttribute('show-labels', s.showLabels === 'key' || s.showLabels === 'both');
     this.piano.setAttribute('range-low', s.rangeLow);
     this.piano.setAttribute('range-high', s.rangeHigh);
   }

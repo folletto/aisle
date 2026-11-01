@@ -24,6 +24,7 @@ Vite + TypeScript, native Web Components (Custom Elements + Shadow DOM, no UI fr
 
 * Scoring: a target is correct only if answered with no wrong press before it. Wrong presses are logged, not subtracted. A timed note reaching the clef counts as failed.
 * Scale start is on by default; its notes count towards the score.
+* Note labels: `showLabels` (none, under note, on key, both; default under note) picks where names appear, `labels` picks the format (Do Re Mi, C D E, both). The format control is disabled when showLabels is none. Old stored settings (`labels: 'none'`, `pianoLabels`) are migrated in `normaliseSettings`.
 * Haptics (`src/haptics.ts`): on-screen key press gives a 10 ms vibration (Android) or a best-effort iOS switch tick; toggle in Settings, on by default.
 * Key sound (`src/sound.ts`): Web Audio triangle-wave note per press (touch and computer keyboard, via the input bus), no audio files. Toggle in Settings, off by default.
 * Stop, leaving the Play tab, or backgrounding the page aborts the session and saves nothing.
