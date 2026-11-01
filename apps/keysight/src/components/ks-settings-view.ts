@@ -29,6 +29,7 @@ input[type=range] { width: 100%; margin-top: 8px; }
 .len output { font-weight: 700; font-size: 15px; }
 .toggle { display: flex; justify-content: space-between; align-items: center; }
 .toggle input { width: 22px; height: 22px; accent-color: #1d4ed8; }
+@media (orientation: landscape) { :host { padding-top: calc(16px + env(safe-area-inset-top)); } }
 `;
 
 function seg(name: string, options: Array<[string, string]>): string {

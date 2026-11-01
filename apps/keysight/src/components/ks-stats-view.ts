@@ -20,6 +20,7 @@ th:first-child, td:first-child { text-align: left; padding-left: 0; }
 td:first-child { color: #4a5060; font-size: 13px; }
 td:last-child { font-weight: 700; }
 .empty { color: #6b7080; line-height: 1.5; }
+@media (orientation: landscape) { :host { padding-top: calc(16px + env(safe-area-inset-top)); } }
 `;
 
 const esc = (s: string) => s.replace(/[&<>]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;' })[c]!);
