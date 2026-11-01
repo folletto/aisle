@@ -11,7 +11,7 @@ import { settingsStore } from '../state';
 const VIEWS: Record<Route, string> = { '/play': 'ks-play-view', '/settings': 'ks-settings-view', '/stats': 'ks-stats-view' };
 
 const STYLE = `
-:host { display: block; position: fixed; inset: 0; background: #fff; }
+:host { display: block; position: fixed; inset: 0; background: #f6f7fb; }
 ks-tabbar { position: absolute; top: calc(8px + env(safe-area-inset-top)); left: 50%; transform: translateX(-50%); z-index: 10; }
 main { position: absolute; inset: 0; }
 main > * { height: 100%; }
