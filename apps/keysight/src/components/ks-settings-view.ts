@@ -76,6 +76,7 @@ export class KsSettingsView extends HTMLElement {
       ${toggle('scaleStart', t('scaleStart'))}
       ${toggle('pianoLabels', t('pianoLabels'))}
       ${toggle('haptics', t('haptics'))}
+      ${toggle('sound', t('sound'))}
       <fieldset><legend>${t('language')}</legend><div class="pair"><select name="language" aria-label="${t('language')}">${LANGS.map((l) => `<option value="${l.code}">${l.name}</option>`).join('')}</select></div></fieldset>
     </form>`;
     if (!this.listening) {
@@ -100,6 +101,7 @@ export class KsSettingsView extends HTMLElement {
       case 'scaleStart': return settingsStore.set({ scaleStart: el.checked });
       case 'pianoLabels': return settingsStore.set({ pianoLabels: el.checked });
       case 'haptics': return settingsStore.set({ haptics: el.checked });
+      case 'sound': return settingsStore.set({ sound: el.checked });
       case 'language': return settingsStore.set({ language: el.value as Lang });
     }
   }
@@ -125,7 +127,7 @@ export class KsSettingsView extends HTMLElement {
     const slider = root.querySelector<HTMLInputElement>('input[name="lengthMin"]')!;
     slider.value = String(s.lengthMin);
     root.querySelector('.len output')!.textContent = t('minShort', { n: s.lengthMin });
-    for (const id of ['scaleStart', 'pianoLabels', 'haptics'] as const) root.querySelector<HTMLInputElement>(`#${id}`)!.checked = s[id];
+    for (const id of ['scaleStart', 'pianoLabels', 'haptics', 'sound'] as const) root.querySelector<HTMLInputElement>(`#${id}`)!.checked = s[id];
     root.querySelector<HTMLSelectElement>('select[name="language"]')!.value = s.language;
   }
 }

@@ -14,6 +14,7 @@ import { saveCompletedSession } from '../data/storage';
 import { settingsStore } from '../state';
 import { icon } from '../icons';
 import { hapticTick } from '../haptics';
+import { playNote } from '../sound';
 import { t } from '../i18n';
 
 const STYLE = `
@@ -65,6 +66,9 @@ export class KsPlayView extends HTMLElement {
 
     this.applySettings();
     this.cleanups.push(settingsStore.subscribe(() => this.applySettings()));
+
+    // Key sound for both touch and computer keyboard presses
+    this.cleanups.push(this.bus.onPress((kp) => settingsStore.get().sound && playNote(kp.midi)));
 
     // Piano touches -> bus
     this.piano.addEventListener('ks-key-down', (e) => {
