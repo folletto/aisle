@@ -37,7 +37,7 @@ export const DEFAULT_SETTINGS: Settings = {
   rangeHigh: 'B4',
   accidentals: 'none',
   speed: 'static',
-  lengthMin: 2,
+  lengthMin: 1,
   scaleStart: true,
   haptics: true,
   sound: false,

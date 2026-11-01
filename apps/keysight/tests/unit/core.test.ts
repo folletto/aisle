@@ -103,6 +103,7 @@ describe('settings', () => {
     expect(DEFAULT_SETTINGS.scaleStart).toBe(true);
     expect(DEFAULT_SETTINGS.haptics).toBe(true);
     expect(DEFAULT_SETTINGS.sound).toBe(false);
+    expect(DEFAULT_SETTINGS.lengthMin).toBe(1);
   });
   it('keeps haptics off when stored off', () => {
     expect(normaliseSettings({ haptics: false }).haptics).toBe(false);
