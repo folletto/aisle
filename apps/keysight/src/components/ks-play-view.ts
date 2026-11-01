@@ -19,9 +19,9 @@ import { playNote } from '../sound';
 import { t } from '../i18n';
 
 const STYLE = `
-:host { display: grid; height: 100%; grid-template-rows: 1fr 1fr; background: #1b1d23; }
-@media (orientation: landscape) { :host { grid-template-rows: 1fr 2fr; background: #fff; padding-right: env(safe-area-inset-right); box-sizing: border-box; } }
-.score-area { position: relative; background: #fff; min-height: 0; }
+:host { display: grid; height: 100%; grid-template-rows: 1fr 1fr; background: #f6f7fb; }
+@media (orientation: landscape) { :host { grid-template-rows: 1fr 2fr; background: #f6f7fb; padding-right: env(safe-area-inset-right); box-sizing: border-box; } }
+.score-area { position: relative; background: #f6f7fb; min-height: 0; }
 ks-score { position: absolute; inset: 0; top: calc(56px + env(safe-area-inset-top)); }
 @media (orientation: landscape) { ks-score { top: env(safe-area-inset-top); } .count { top: calc(6px + env(safe-area-inset-top)); right: 16px; } .badge.right { right: 8px; } }
 ks-results { position: absolute; inset: 0; z-index: 3; }
@@ -33,7 +33,7 @@ ks-results { position: absolute; inset: 0; z-index: 3; }
 .badge:focus-visible { outline: 2px solid #1d4ed8; outline-offset: 2px; }
 .badge.left { left: calc(8px + env(safe-area-inset-left)); }
 .badge.right { right: calc(8px + env(safe-area-inset-right)); }
-ks-piano { min-height: 0; padding-bottom: env(safe-area-inset-bottom); background: #1b1d23; }
+ks-piano { min-height: 0; padding-bottom: env(safe-area-inset-bottom); background: #f6f7fb; }
 `;
 
 export class KsPlayView extends HTMLElement {

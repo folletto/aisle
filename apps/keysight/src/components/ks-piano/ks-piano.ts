@@ -17,7 +17,7 @@ import { LabelMode, Locale, formatKeyLabel, midiOf, noteFromMidi, parseNote } fr
 import { whiteNotesBetween } from '../../core/pool';
 
 const STYLE = `
-:host { display: block; position: relative; background: #1b1d23; touch-action: none;
+:host { display: block; position: relative; background: #f6f7fb; touch-action: none;
   user-select: none; -webkit-user-select: none; -webkit-touch-callout: none; }
 .pan { position: absolute; left: 0; right: 0; top: 0; height: 20px; z-index: 5; cursor: grab; touch-action: none; }
 .pan::after { content: ''; position: absolute; left: 50%; top: 8px; width: 44px; height: 4px; margin-left: -22px;

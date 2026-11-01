@@ -30,7 +30,7 @@ interface Entry {
 }
 
 const STYLE = `
-:host { display: block; position: relative; min-height: 60px; overflow: hidden; background: #fff; }
+:host { display: block; position: relative; min-height: 60px; overflow: hidden; background: #f6f7fb; }
 .wrap { position: absolute; inset: 0; }
 svg { width: 100%; height: 100%; display: block; }
 `;
