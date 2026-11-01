@@ -25,7 +25,7 @@ Vite + TypeScript, native Web Components (Custom Elements + Shadow DOM, no UI fr
 * Scoring: a target is correct only if answered with no wrong press before it. Wrong presses are logged, not subtracted. A timed note reaching the clef counts as failed.
 * Scale start notes count towards the score.
 * Stop, leaving the Play tab, or backgrounding the page aborts the session and saves nothing.
-* Stats tab is a placeholder; data is already collected.
+* Stats tab (`core/stats.ts`, `ks-stats-view`): last 7 and 30 day averages and the 5 latest scores. Windows are calendar days anchored on the day of the most recent session, not today. The average is pooled (all notes hit / all notes asked), not a mean of session percentages.
 
 ## Testing
 
