@@ -15,7 +15,7 @@ import { saveCompletedSession } from '../data/storage';
 import { settingsStore } from '../state';
 import { icon } from '../icons';
 import { hapticTick } from '../haptics';
-import { playNote } from '../sound';
+import { playNote, primeAudio } from '../sound';
 import { t } from '../i18n';
 
 const STYLE = `
@@ -135,6 +135,7 @@ export class KsPlayView extends HTMLElement {
 
   async startSession(): Promise<void> {
     if (this.running) return;
+    if (settingsStore.get().sound) primeAudio(); // before any await, so it still counts as part of the tap
     await this.score.ready;
     this.results.dismiss();
     const engine = new SessionEngine(settingsStore.get(), this.score);
