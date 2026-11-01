@@ -1,6 +1,7 @@
 // Stats view: 7 and 30 day averages (anchored on the last session) and the 5 latest scores.
 import { computeStats, Average } from '../core/stats';
-import { listSessions } from '../data/storage';
+import { deleteSession, listSessions } from '../data/storage';
+import { icon } from '../icons';
 import { getLanguage, sessionsLabel, t } from '../i18n';
 
 const STYLE = `
@@ -10,6 +11,7 @@ const STYLE = `
 h1 { margin: 0 0 4px; font-size: 22px; }
 h2 { margin: 0 0 8px; font-size: 12px; font-weight: 700; letter-spacing: .05em; text-transform: uppercase; color: #6b7080; }
 .card { border: 1px solid #dfe2ea; border-radius: 14px; background: #fff; padding: 14px; }
+.gold { color: #d49b00; }
 .avgs { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
 .big { font-size: 34px; font-weight: 700; line-height: 1.1; }
 .sub { margin-top: 4px; font-size: 13px; color: #6b7080; }
@@ -18,7 +20,12 @@ th { text-align: right; font-size: 11px; font-weight: 700; color: #6b7080; text-
 td { text-align: right; padding: 8px 0 8px 8px; border-top: 1px solid #eef0f6; font-size: 15px; }
 th:first-child, td:first-child { text-align: left; padding-left: 0; }
 td:first-child { color: #4a5060; font-size: 13px; }
-td:last-child { font-weight: 700; }
+td.pct { font-weight: 700; }
+td.streak { color: #4a5060; }
+td.del, th.del { width: 36px; padding-left: 4px; }
+.del button { display: inline-flex; align-items: center; justify-content: center; width: 32px; height: 32px; border: 0; border-radius: 8px; background: transparent; color: #6b7080; cursor: pointer; -webkit-tap-highlight-color: transparent; }
+.del button:hover { background: #eef0f6; color: #d92d20; }
+.del button:focus-visible { outline: 2px solid #1d4ed8; outline-offset: 2px; }
 .empty { color: #6b7080; line-height: 1.5; }
 @media (orientation: landscape) { :host { padding-top: calc(16px + env(safe-area-inset-top)); } }
 `;
@@ -33,23 +40,45 @@ function avgCard(title: string, a: Average | null): string {
   }</div>`;
 }
 
+function streakCard(n: number | null): string {
+  return `<div class="card"><h2>${t('longestStreak')}</h2>${
+    n === null ? `<div class="big">–</div>` : `<div class="big gold">\u2605\uFE0E ${n}</div><div class="sub">${t('inARow', { n })}</div>`
+  }</div>`;
+}
+
 export class KsStatsView extends HTMLElement {
-  async connectedCallback(): Promise<void> {
+  connectedCallback(): void {
     const root = this.shadowRoot ?? this.attachShadow({ mode: 'open' });
+    root.addEventListener('click', (e) => {
+      const btn = (e.target as HTMLElement).closest<HTMLButtonElement>('button[data-delete]');
+      if (btn) void this.removeScore(Number(btn.dataset.delete));
+    });
+    void this.render();
+  }
+
+  private async removeScore(id: number): Promise<void> {
+    if (!confirm(t('deleteScoreConfirm'))) return;
+    await deleteSession(id);
+    await this.render();
+  }
+
+  private async render(): Promise<void> {
+    const root = this.shadowRoot!;
     root.innerHTML = `<style>${STYLE}</style><div class="wrap"><h1>${t('stats')}</h1></div>`;
     let body: string;
     try {
       const stats = computeStats(await listSessions());
       if (!this.isConnected) return;
       body = stats.latest.length
-        ? `<div class="avgs">${avgCard(t('last7'), stats.last7)}${avgCard(t('last30'), stats.last30)}</div>
+        ? `${streakCard(stats.longestStreak)}<div class="avgs">${avgCard(t('last7'), stats.last7)}${avgCard(t('last30'), stats.last30)}</div>
            <div class="card"><h2>${t('latest')}</h2><table>
-             <tr><th>${t('when')}</th><th>${t('hit')}</th><th>${t('total')}</th><th>%</th></tr>
+             <tr><th>${t('when')}</th><th>${t('hit')}</th><th>${t('total')}</th><th>%</th><th>${t('streak')}</th><th class="del"></th></tr>
              ${stats.latest
                .map((s) => {
                  const when = new Date(s.startedAt).toLocaleDateString(getLanguage(), { day: 'numeric', month: 'short' });
                  const mode = s.mode === 'static' ? t('static') : t('bpm', { n: s.mode });
-                 return `<tr><td>${esc(when)} · ${esc(mode)}</td><td>${s.correct}</td><td>${s.total}</td><td>${s.percent}%</td></tr>`;
+                 const del = s.id === undefined ? '' : `<button type="button" data-delete="${s.id}" aria-label="${t('deleteScore')}" title="${t('deleteScore')}">${icon('trash', 16)}</button>`;
+                 return `<tr><td>${esc(when)} · ${esc(mode)}</td><td>${s.correct}</td><td>${s.total}</td><td class="pct">${s.percent}%</td><td class="streak">${s.bestStreak === undefined ? '–' : s.bestStreak}</td><td class="del">${del}</td></tr>`;
                })
                .join('')}
            </table></div>`

@@ -7,20 +7,21 @@ import type { KsScore } from './ks-score/ks-score';
 import type { KsPiano } from './ks-piano/ks-piano';
 import type { KsResults } from './ks-results';
 import { SessionEngine } from '../core/session';
+import { labelOnMatch, labelsUnderNote } from '../core/settings';
 import { noteFromMidi, parseNote } from '../core/notes';
 import { InputBus } from '../input/bus';
 import { attachKeyboardInput } from '../input/keyboard-map';
 import { saveCompletedSession } from '../data/storage';
 import { settingsStore } from '../state';
 import { icon } from '../icons';
-import { hapticTick } from '../haptics';
-import { playNote } from '../sound';
+import { attachIosHaptic, canVibrate, hapticPress } from '../haptics';
+import { playNote, primeAudio } from '../sound';
 import { t } from '../i18n';
 
 const STYLE = `
-:host { display: grid; height: 100%; grid-template-rows: 1fr 1fr; background: #1b1d23; }
-@media (orientation: landscape) { :host { grid-template-rows: 1fr 2fr; background: #fff; padding-right: env(safe-area-inset-right); box-sizing: border-box; } }
-.score-area { position: relative; background: #fff; min-height: 0; }
+:host { display: grid; height: 100%; grid-template-rows: 1fr 1fr; background: #f6f7fb; }
+@media (orientation: landscape) { :host { grid-template-rows: 1fr 2fr; background: #f6f7fb; padding-right: env(safe-area-inset-right); box-sizing: border-box; } }
+.score-area { position: relative; background: #f6f7fb; min-height: 0; }
 ks-score { position: absolute; inset: 0; top: calc(56px + env(safe-area-inset-top)); }
 @media (orientation: landscape) { ks-score { top: env(safe-area-inset-top); } .count { top: calc(6px + env(safe-area-inset-top)); right: 16px; } .badge.right { right: 8px; } }
 ks-results { position: absolute; inset: 0; z-index: 3; }
@@ -32,7 +33,9 @@ ks-results { position: absolute; inset: 0; z-index: 3; }
 .badge:focus-visible { outline: 2px solid #1d4ed8; outline-offset: 2px; }
 .badge.left { left: calc(8px + env(safe-area-inset-left)); }
 .badge.right { right: calc(8px + env(safe-area-inset-right)); }
-ks-piano { min-height: 0; padding-bottom: env(safe-area-inset-bottom); background: #1b1d23; }
+label.haptic { display: flex; flex-direction: column; position: relative; min-height: 0; -webkit-tap-highlight-color: transparent; }
+label.haptic input { position: absolute; width: 1px; height: 1px; margin: 0; visibility: hidden; }
+ks-piano { flex: 1; min-height: 0; padding-bottom: env(safe-area-inset-bottom); background: #f6f7fb; }
 `;
 
 export class KsPlayView extends HTMLElement {
@@ -56,7 +59,7 @@ export class KsPlayView extends HTMLElement {
         <button type="button" class="badge right">${icon('warning', 14)}<b></b></button>
         <ks-results></ks-results>
       </section>
-      <ks-piano></ks-piano>`;
+      <label class="haptic"><input type="checkbox" switch tabindex="-1" aria-hidden="true"><ks-piano></ks-piano></label>`;
     this.score = root.querySelector('ks-score') as KsScore;
     this.piano = root.querySelector('ks-piano') as KsPiano;
     this.results = root.querySelector('ks-results') as KsResults;
@@ -70,9 +73,16 @@ export class KsPlayView extends HTMLElement {
     // Key sound for both touch and computer keyboard presses
     this.cleanups.push(this.bus.onPress((kp) => settingsStore.get().sound && playNote(kp.midi)));
 
+    // iOS: the tap on a key bubbles to the label around the piano, which toggles its hidden switch (haptic tick).
+    // Not needed when the Vibration API already buzzed on press, or for taps outside a key (pan strip).
+    this.cleanups.push(
+      attachIosHaptic(root.querySelector('label.haptic') as HTMLLabelElement, (e) =>
+        settingsStore.get().haptics && !canVibrate() && e.composedPath().some((n) => n instanceof Element && n.classList.contains('key')),
+      ),
+    );
     // Piano touches -> bus
     this.piano.addEventListener('ks-key-down', (e) => {
-      if (settingsStore.get().haptics) hapticTick();
+      if (settingsStore.get().haptics) hapticPress();
       const midi = (e as CustomEvent).detail.midi as number;
       const prefer = settingsStore.get().accidentals === 'flats' ? 'b' : '#';
       this.bus.emit({ note: noteFromMidi(midi, prefer), midi, source: 'touch', timestamp: performance.now() });
@@ -119,20 +129,22 @@ export class KsPlayView extends HTMLElement {
   private applySettings(): void {
     const s = settingsStore.get();
     this.score.setAttribute('clef', s.clef);
-    this.score.setAttribute('labels', s.labels);
+    this.score.setAttribute('labels', labelsUnderNote(s) ? s.labels : 'none');
+    this.score.setAttribute('match-labels', labelOnMatch(s) ? s.labels : 'none');
     this.score.setAttribute('locale', s.language);
     this.piano.setAttribute('locale', s.language);
     this.score.setAttribute('range-low', s.rangeLow);
     this.score.setAttribute('range-high', s.rangeHigh);
     this.piano.setAttribute('labels', s.labels);
     this.piano.setAttribute('accidentals', s.accidentals);
-    this.piano.toggleAttribute('show-labels', s.pianoLabels);
+    this.piano.toggleAttribute('show-labels', s.showLabels === 'key' || s.showLabels === 'both');
     this.piano.setAttribute('range-low', s.rangeLow);
     this.piano.setAttribute('range-high', s.rangeHigh);
   }
 
   async startSession(): Promise<void> {
     if (this.running) return;
+    if (settingsStore.get().sound) primeAudio(); // before any await, so it still counts as part of the tap
     await this.score.ready;
     this.results.dismiss();
     const engine = new SessionEngine(settingsStore.get(), this.score);

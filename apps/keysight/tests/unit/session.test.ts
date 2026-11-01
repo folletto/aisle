@@ -7,6 +7,8 @@ import { KeyPress } from '../../src/input/types';
 
 /** Fake score that mimics ks-score's target rules. */
 class FakeScore implements ScoreLike {
+  streaks: Array<number | null> = [];
+  setStreak(n: number | null) { this.streaks.push(n); }
   shown: Note | null = null;
   queue: Note[] = [];
   calls: string[] = [];
@@ -82,6 +84,17 @@ describe('static session', () => {
     expect(seen).toEqual(['C4', 'D4', 'E4', 'F4', 'G4', 'A4', 'B4']);
     expect(e.result().total).toBe(7);
   });
+  it('the opening scale does not count towards the streak', () => {
+    const score = new FakeScore();
+    const e = new SessionEngine(settings({ scaleStart: true }), score, createRng(1));
+    e.start(0);
+    for (let i = 0; i < 7; i++) e.press(press(score.shown!), i * 10); // the scale
+    expect(e.streak).toBe(0);
+    expect(e.bestStreak).toBe(0);
+    e.press(press(score.shown!), 100);
+    e.press(press(score.shown!), 110);
+    expect(e.streak).toBe(2);
+  });
   it('accepts either spelling of a black key', () => {
     const score = new FakeScore();
     const e = new SessionEngine(settings({ accidentals: 'both' }), score, createRng(2));
@@ -126,5 +139,23 @@ describe('timed session', () => {
     e.start(0, 1_000_000);
     e.tick(60_000);
     expect(e.record()).toMatchObject({ bpm: 20, clef: 'treble', range: 'C4-B4', startedAt: 1_000_000, endedAt: 1_060_000 });
+  });
+
+  it('tracks the streak of notes hit with no mistake', () => {
+    const score = new FakeScore();
+    const e = new SessionEngine(settings({}), score, createRng(3));
+    e.start(0);
+    const hit = (t: number) => e.press(press(score.target()!), t);
+    hit(100); hit(200); hit(300);
+    expect(e.streak).toBe(3);
+    e.press(press(wrongNote(score.target()!)), 400); // mistake resets
+    expect(e.streak).toBe(0);
+    hit(500); // answered after a mistake: not a clean hit
+    expect(e.streak).toBe(0);
+    hit(600);
+    expect(e.streak).toBe(1);
+    expect(score.streaks[0]).toBe(0);
+    expect(e.bestStreak).toBe(3);
+    expect(e.record().bestStreak).toBe(3);
   });
 });

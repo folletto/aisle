@@ -11,7 +11,7 @@ export class KsResults extends HTMLElement {
   show(r: SessionResult): void {
     const mode = r.mode === 'static' ? t('static') : t('bpm', { n: r.mode });
     this.shadowRoot!.innerHTML = `<style>
-      :host { display: grid; place-items: center; background: rgba(255,255,255,.96); }
+      :host { display: grid; place-items: center; background: #f6f7fb; }
       :host([hidden]) { display: none; }
       .row { display: flex; gap: 28px; text-align: center; }
       b { display: block; font: 700 clamp(28px, 8vw, 52px)/1 system-ui, sans-serif; color: #1b1d23; }

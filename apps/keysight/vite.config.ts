@@ -11,7 +11,7 @@ export default defineConfig({
         short_name: 'KeySight',
         description: 'Piano sight-reading trainer',
         theme_color: '#ffffff',
-        background_color: '#ffffff',
+        background_color: '#f6f7fb',
         display: 'standalone',
         orientation: 'any',
         start_url: '/',

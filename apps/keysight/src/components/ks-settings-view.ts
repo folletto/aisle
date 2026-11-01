@@ -1,7 +1,7 @@
 // Settings view: every change is saved immediately through the settings store.
 import { LabelMode, midiOf, parseNote } from '../core/notes';
 import { Accidentals, Clef, rangeOptions } from '../core/pool';
-import { Settings, Speed } from '../core/settings';
+import { Settings, ShowLabels, Speed, labelsUnderNote } from '../core/settings';
 import { LANGS, Lang, getLanguage, t } from '../i18n';
 import { settingsStore } from '../state';
 
@@ -12,6 +12,8 @@ const STYLE = `
 form { max-width: 520px; margin: 0 auto; display: grid; gap: 14px; }
 h1 { margin: 0 0 4px; font-size: 22px; }
 fieldset, .row { border: 1px solid #dfe2ea; border-radius: 14px; background: #fff; padding: 12px 14px; margin: 0; }
+fieldset:disabled { opacity: .45; }
+fieldset:disabled .seg input { cursor: default; }
 legend, .row > label:first-child { font-size: 12px; font-weight: 700; letter-spacing: .05em; text-transform: uppercase; color: #6b7080; padding: 0 4px; }
 .seg { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 6px; }
 .seg label { position: relative; flex: 1 1 auto; }
@@ -68,13 +70,14 @@ export class KsSettingsView extends HTMLElement {
     <form onsubmit="return false">
       <h1>${t('settings')}</h1>
       <fieldset><legend>${t('clef')}</legend>${seg('clef', [['treble', t('treble')], ['bass', t('bass')]])}</fieldset>
-      <fieldset><legend>${t('labels')}</legend>${seg('labels', [['none', t('none')], ['solfege', t('solfege')], ['letters', t('letters')], ['both', t('both')]])}</fieldset>
+      <fieldset><legend>${t('showLabels')}</legend><div class="pair"><select name="showLabels" aria-label="${t('showLabels')}">${([['none', t('none')], ['note', t('underNote')], ['key', t('onKey')], ['both', t('both')]] as const).map(([v, l]) => `<option value="${v}">${l}</option>`).join('')}</select></div></fieldset>
+      <fieldset class="labels-format"><legend>${t('labels')}</legend>${seg('labels', [['solfege', t('solfege')], ['letters', t('letters')], ['both', t('both')]])}</fieldset>
+      ${toggle('matchLabel', t('matchLabel'))}
       <fieldset><legend>${t('range')}</legend><div class="pair"><select name="rangeLow" aria-label="${t('lowestNote')}"></select><span>${t('to')}</span><select name="rangeHigh" aria-label="${t('highestNote')}"></select></div></fieldset>
       <fieldset><legend>${t('accidentals')}</legend>${seg('accidentals', [['none', t('none')], ['sharps', t('sharps')], ['flats', t('flats')], ['both', t('both')]])}</fieldset>
       <fieldset><legend>${t('speed')}</legend>${seg('speed', [['static', t('static')], ['20', t('bpm', { n: 20 })], ['40', t('bpm', { n: 40 })], ['80', t('bpm', { n: 80 })]])}</fieldset>
       <fieldset><legend>${t('length')}</legend><div class="len"><span>${t('minutes')}</span><output></output></div><input type="range" name="lengthMin" min="1" max="10" step="1" aria-label="${t('lengthAria')}"></fieldset>
       ${toggle('scaleStart', t('scaleStart'))}
-      ${toggle('pianoLabels', t('pianoLabels'))}
       ${toggle('haptics', t('haptics'))}
       ${toggle('sound', t('sound'))}
       <fieldset><legend>${t('language')}</legend><div class="pair"><select name="language" aria-label="${t('language')}">${LANGS.map((l) => `<option value="${l.code}">${l.name}</option>`).join('')}</select></div></fieldset>
@@ -92,14 +95,15 @@ export class KsSettingsView extends HTMLElement {
   private onChange(el: HTMLInputElement): void {
     switch (el.name) {
       case 'clef': return settingsStore.set({ clef: el.value as Clef });
+      case 'showLabels': return settingsStore.set({ showLabels: el.value as ShowLabels });
       case 'labels': return settingsStore.set({ labels: el.value as LabelMode });
       case 'accidentals': return settingsStore.set({ accidentals: el.value as Accidentals });
       case 'speed': return settingsStore.set({ speed: (el.value === 'static' ? 'static' : Number(el.value)) as Speed });
       case 'rangeLow': return settingsStore.set({ rangeLow: el.value });
       case 'rangeHigh': return settingsStore.set({ rangeHigh: el.value });
       case 'lengthMin': return settingsStore.set({ lengthMin: Number(el.value) });
+      case 'matchLabel': return settingsStore.set({ matchLabel: el.checked });
       case 'scaleStart': return settingsStore.set({ scaleStart: el.checked });
-      case 'pianoLabels': return settingsStore.set({ pianoLabels: el.checked });
       case 'haptics': return settingsStore.set({ haptics: el.checked });
       case 'sound': return settingsStore.set({ sound: el.checked });
       case 'language': return settingsStore.set({ language: el.value as Lang });
@@ -112,6 +116,8 @@ export class KsSettingsView extends HTMLElement {
     const check = (name: string, value: string) =>
       root.querySelectorAll<HTMLInputElement>(`input[name="${name}"]`).forEach((i) => (i.checked = i.value === value));
     check('clef', s.clef);
+    root.querySelector<HTMLSelectElement>('select[name="showLabels"]')!.value = s.showLabels;
+    root.querySelector<HTMLFieldSetElement>('fieldset.labels-format')!.disabled = s.showLabels === 'none';
     check('labels', s.labels);
     check('accidentals', s.accidentals);
     check('speed', String(s.speed));
@@ -127,7 +133,10 @@ export class KsSettingsView extends HTMLElement {
     const slider = root.querySelector<HTMLInputElement>('input[name="lengthMin"]')!;
     slider.value = String(s.lengthMin);
     root.querySelector('.len output')!.textContent = t('minShort', { n: s.lengthMin });
-    for (const id of ['scaleStart', 'pianoLabels', 'haptics', 'sound'] as const) root.querySelector<HTMLInputElement>(`#${id}`)!.checked = s[id];
+    const match = root.querySelector<HTMLInputElement>('#matchLabel')!;
+    match.disabled = labelsUnderNote(s);
+    match.checked = labelsUnderNote(s) || s.matchLabel;
+    for (const id of ['scaleStart', 'haptics', 'sound'] as const) root.querySelector<HTMLInputElement>(`#${id}`)!.checked = s[id];
     root.querySelector<HTMLSelectElement>('select[name="language"]')!.value = s.language;
   }
 }

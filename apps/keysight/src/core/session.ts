@@ -23,6 +23,8 @@ export interface ScoreLike {
   judge(pressed: Note): JudgeResult;
   start(): void;
   stop(): void;
+  /** Show the current streak under the clef (null hides it). Optional: not every score has one. */
+  setStreak?(n: number | null): void;
 }
 
 export interface EventRecord {
@@ -50,12 +52,16 @@ export interface SessionRecord extends SessionResult {
   accidentals: string;
   labels: string;
   scaleStart: boolean;
+  /** Longest run of notes hit with no mistake. Missing on sessions saved before this was tracked. */
+  bestStreak?: number;
 }
 
 interface Target {
   note: Note;
   since: number;
   wrong: boolean;
+  /** Part of the opening scale: counts for the score but not for the streak. */
+  scale: boolean;
 }
 
 export type SessionState = 'idle' | 'running' | 'finished' | 'stopped';
@@ -74,6 +80,10 @@ export class SessionEngine {
   private endAt = 0;
   private nextSpawn = 0;
   private correct = 0;
+  /** Notes hit in a row with no mistake. */
+  streak = 0;
+  /** Longest streak so far in this session. */
+  bestStreak = 0;
   private total = 0;
   private startedAtWall = 0;
   private endedAtWall = 0;
@@ -101,7 +111,10 @@ export class SessionEngine {
     this.endAt = now + this.settings.lengthMin * 60_000;
     this.nextSpawn = now;
     this.startedAtWall = wallClock;
+    this.streak = 0;
+    this.bestStreak = 0;
     this.score.clear();
+    this.score.setStreak?.(0);
     this.score.start();
     if (this.bpm === null) this.showNext(now);
     else this.tick(now);
@@ -118,8 +131,8 @@ export class SessionEngine {
     if (bpm === null) return;
     const interval = 60_000 / bpm;
     while (now >= this.nextSpawn && this.nextSpawn < this.endAt) {
-      const note = this.nextNote();
-      this.pending.push({ note, since: this.nextSpawn, wrong: false });
+      const { note, scale } = this.nextNote();
+      this.pending.push({ note, since: this.nextSpawn, wrong: false, scale });
       this.score.enqueue([note], { bpm });
       this.nextSpawn += interval;
     }
@@ -140,10 +153,14 @@ export class SessionEngine {
     });
     if (!result.correct) {
       target.wrong = true;
+      if (!target.scale) this.setStreak(0);
       return;
     }
     this.total++;
-    if (!target.wrong) this.correct++;
+    if (!target.wrong) {
+      this.correct++;
+      if (!target.scale) this.setStreak(this.streak + 1);
+    }
     this.pending.shift();
     if (this.bpm === null) this.showNext(now);
   }
@@ -154,6 +171,7 @@ export class SessionEngine {
     const target = this.pending.shift();
     if (!target) return;
     this.total++;
+    if (!target.scale) this.setStreak(0);
     this.events.push({
       t: now - this.startAt,
       expected: noteName(target.note),
@@ -170,6 +188,7 @@ export class SessionEngine {
     this.state = 'stopped';
     this.score.stop();
     this.score.clear();
+    this.score.setStreak?.(null);
   }
 
   result(): SessionResult {
@@ -191,8 +210,9 @@ export class SessionEngine {
       clef: s.clef,
       range: `${s.rangeLow}-${s.rangeHigh}`,
       accidentals: s.accidentals,
-      labels: s.labels,
+      labels: s.showLabels === 'note' || s.showLabels === 'both' ? s.labels : 'none',
       scaleStart: s.scaleStart,
+      bestStreak: this.bestStreak,
     };
   }
 
@@ -201,18 +221,26 @@ export class SessionEngine {
     this.endedAtWall = this.startedAtWall + (now - this.startAt);
     this.score.stop();
     this.score.clear();
+    this.score.setStreak?.(null);
     this.onFinish?.(this.result());
   }
 
-  private nextNote(): Note {
-    const note = this.queued.length ? this.queued.shift()! : pickNote(this.pool, this.prev, this.rng);
+  private setStreak(n: number): void {
+    this.streak = n;
+    this.bestStreak = Math.max(this.bestStreak, n);
+    this.score.setStreak?.(n);
+  }
+
+  private nextNote(): { note: Note; scale: boolean } {
+    const scale = this.queued.length > 0;
+    const note = scale ? this.queued.shift()! : pickNote(this.pool, this.prev, this.rng);
     this.prev = note;
-    return note;
+    return { note, scale };
   }
 
   private showNext(now: number): void {
-    const note = this.nextNote();
-    this.pending = [{ note, since: now, wrong: false }];
+    const { note, scale } = this.nextNote();
+    this.pending = [{ note, since: now, wrong: false, scale }];
     this.score.showNote(note);
   }
 }

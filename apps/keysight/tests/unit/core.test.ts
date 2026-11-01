@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { diatonicIndex, formatKeyLabel, formatLabel, midiOf, noteFromMidi, noteName, parseNote } from '../../src/core/notes';
 import { buildPool, createRng, pickNote, rangeOptions, whiteNotesBetween } from '../../src/core/pool';
-import { DEFAULT_SETTINGS, normaliseSettings, updateSettings } from '../../src/core/settings';
+import { DEFAULT_SETTINGS, labelOnMatch, normaliseSettings, updateSettings } from '../../src/core/settings';
 import { centredStart, clampVisible, fitAllVisible, defaultVisible, hiddenCounts, pinchVisible } from '../../src/core/keyboard';
 import { computeLayout, noteOffsetY } from '../../src/components/ks-score/layout';
 import { KEY_OFFSETS, midiForKey } from '../../src/input/keyboard-map';
@@ -103,6 +103,7 @@ describe('settings', () => {
     expect(DEFAULT_SETTINGS.scaleStart).toBe(true);
     expect(DEFAULT_SETTINGS.haptics).toBe(true);
     expect(DEFAULT_SETTINGS.sound).toBe(false);
+    expect(DEFAULT_SETTINGS.lengthMin).toBe(1);
   });
   it('keeps haptics off when stored off', () => {
     expect(normaliseSettings({ haptics: false }).haptics).toBe(false);
@@ -121,6 +122,26 @@ describe('settings', () => {
   it('clamps length', () => {
     expect(normaliseSettings({ lengthMin: 99 }).lengthMin).toBe(10);
     expect(normaliseSettings({ lengthMin: 0 }).lengthMin).toBe(1);
+  });
+  it('validates showLabels and keeps a real label format', () => {
+    expect(DEFAULT_SETTINGS.showLabels).toBe('note');
+    expect(normaliseSettings({ showLabels: 'key' }).showLabels).toBe('key');
+    expect(normaliseSettings({ showLabels: 'x' as never }).showLabels).toBe('note');
+    expect(normaliseSettings({ showLabels: 'none', labels: 'none' }).labels).toBe('letters');
+  });
+  it('shows the label on a match always under note / both, otherwise per toggle', () => {
+    const f = (showLabels: never, matchLabel: boolean) => labelOnMatch(normaliseSettings({ showLabels, matchLabel }));
+    expect(f('note' as never, false)).toBe(true);
+    expect(f('both' as never, false)).toBe(true);
+    expect(f('none' as never, false)).toBe(false);
+    expect(f('key' as never, true)).toBe(true);
+  });
+  it('migrates the old labels / pianoLabels settings', () => {
+    const old = (o: object) => normaliseSettings(o as never);
+    expect(old({ labels: 'none', pianoLabels: true }).showLabels).toBe('none');
+    expect(old({ labels: 'solfege', pianoLabels: false })).toMatchObject({ showLabels: 'note', labels: 'solfege' });
+    expect(old({ labels: 'both', pianoLabels: true })).toMatchObject({ showLabels: 'both', labels: 'both' });
+    expect('pianoLabels' in old({ pianoLabels: true })).toBe(false);
   });
 });
 

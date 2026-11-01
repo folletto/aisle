@@ -17,6 +17,7 @@ const SVG_NS = 'http://www.w3.org/2000/svg';
 const BASE_X = 80; // where VexFlow draws a note before we translate it
 const RED = '#d92d20';
 const GREEN = '#12a150';
+const GOLD = '#d49b00';
 
 interface Entry {
   note: Note;
@@ -30,13 +31,13 @@ interface Entry {
 }
 
 const STYLE = `
-:host { display: block; position: relative; min-height: 60px; overflow: hidden; background: #fff; }
+:host { display: block; position: relative; min-height: 60px; overflow: hidden; background: #f6f7fb; }
 .wrap { position: absolute; inset: 0; }
 svg { width: 100%; height: 100%; display: block; }
 `;
 
 export class KsScore extends HTMLElement {
-  static observedAttributes = ['clef', 'labels', 'locale', 'range-low', 'range-high'];
+  static observedAttributes = ['clef', 'labels', 'match-labels', 'locale', 'range-low', 'range-high'];
 
   /** Resolves once the music font is ready and the staff is drawn. */
   ready: Promise<void>;
@@ -53,6 +54,8 @@ export class KsScore extends HTMLElement {
   private staticEntry: Entry | null = null;
   private queue: Entry[] = [];
   private fontsReady = false;
+  private streak: number | null = null;
+  private streakEl: SVGTextElement | null = null;
 
   constructor() {
     super();
@@ -69,6 +72,11 @@ export class KsScore extends HTMLElement {
   get labels(): LabelMode {
     const v = this.getAttribute('labels');
     return v === 'none' || v === 'solfege' || v === 'both' ? v : 'letters';
+  }
+  /** Label format shown only on a matched note (while `labels` is none). */
+  get matchLabels(): LabelMode {
+    const v = this.getAttribute('match-labels');
+    return v === 'solfege' || v === 'letters' || v === 'both' ? v : 'none';
   }
   get locale(): Locale {
     const v = this.getAttribute('locale');
@@ -143,6 +151,12 @@ export class KsScore extends HTMLElement {
     return { correct, expected: target.note, pressed };
   }
 
+  /** Streak (star + number, gold) under the clef; shown from 2 up, null hides it. Survives relayouts. */
+  setStreak(n: number | null): void {
+    this.streak = n;
+    this.drawStreak();
+  }
+
   /** Start / freeze the scrolling clock. */
   start(): void {
     this.running = true;
@@ -209,11 +223,39 @@ export class KsScore extends HTMLElement {
     stave.addClef(this.clef);
     stave.setContext(ctx).draw();
     this.stave = stave;
+    this.streakEl = null;
+    this.drawStreak();
 
     this.staticEntry = null;
     this.queue = [];
     if (keepStatic) this.showNote(keepStatic);
     for (const k of keepQueue) this.queue.push(this.makeScrolling(k.note, k.progress));
+  }
+
+  private drawStreak(): void {
+    if (!this.svgEl || !this.stave || !this.layout) return;
+    if (this.streak === null || this.streak < 2) {
+      this.streakEl?.remove();
+      this.streakEl = null;
+      return;
+    }
+    if (!this.streakEl) {
+      const t = document.createElementNS(SVG_NS, 'text');
+      // Centred under the clef: the clef sits between the stave's left edge and where notes start.
+      t.setAttribute('x', String((this.stave.getX() + this.stave.getNoteStartX()) / 2));
+      t.setAttribute('y', String(this.layout.topLineY + 4 * LINE_GAP + 34));
+      t.setAttribute('text-anchor', 'middle');
+      t.setAttribute('font-size', '16');
+      t.setAttribute('font-family', 'system-ui, sans-serif');
+      t.setAttribute('font-weight', '700');
+      t.setAttribute('fill', GOLD);
+      t.setAttribute('stroke', 'none');
+      t.setAttribute('class', 'streak');
+      t.style.fontVariantNumeric = 'tabular-nums';
+      this.svgEl.appendChild(t);
+      this.streakEl = t;
+    }
+    this.streakEl.textContent = `\u2605\uFE0E ${this.streak}`; // black star, forced to text (not emoji) presentation
   }
 
   /** Draw one note (stem, ledger lines, accidental, label) into its own group. */
@@ -242,24 +284,27 @@ export class KsScore extends HTMLElement {
     outer.appendChild(inner);
 
     const cx = (sn.getNoteHeadBeginX() + sn.getNoteHeadEndX()) / 2;
-    const withLabel = opts.label ?? true;
-    const text = withLabel ? formatLabel(note, this.labels, this.locale) : '';
-    if (text) {
-      const noteY = this.layout!.topLineY + noteOffsetY(note, this.clef);
-      const labelY = Math.max(noteY + 34, this.layout!.topLineY + 4 * LINE_GAP + 26);
-      const t = document.createElementNS(SVG_NS, 'text');
-      t.setAttribute('x', String(cx));
-      t.setAttribute('y', String(labelY));
-      t.setAttribute('text-anchor', 'middle');
-      t.setAttribute('font-size', '14');
-      t.setAttribute('font-family', 'system-ui, sans-serif');
-      t.setAttribute('font-weight', '600');
-      t.setAttribute('fill', opts.color ?? '#333');
-      t.setAttribute('stroke', 'none');
-      t.textContent = text;
-      inner.appendChild(t);
-    }
+    if (opts.label ?? true) this.drawLabel(inner, note, cx, this.labels, opts.color);
     return { note, outer, inner, cx, startX: 0, endX: 0, durationMs: 0 };
+  }
+
+  /** Note name under the notehead, formatted with `mode` (nothing when the mode is none). */
+  private drawLabel(inner: SVGGElement, note: Note, cx: number, mode: LabelMode, color?: string): void {
+    const text = formatLabel(note, mode, this.locale);
+    if (!text) return;
+    const noteY = this.layout!.topLineY + noteOffsetY(note, this.clef);
+    const labelY = Math.max(noteY + 34, this.layout!.topLineY + 4 * LINE_GAP + 26);
+    const t = document.createElementNS(SVG_NS, 'text');
+    t.setAttribute('x', String(cx));
+    t.setAttribute('y', String(labelY));
+    t.setAttribute('text-anchor', 'middle');
+    t.setAttribute('font-size', '14');
+    t.setAttribute('font-family', 'system-ui, sans-serif');
+    t.setAttribute('font-weight', '600');
+    t.setAttribute('fill', color ?? '#333');
+    t.setAttribute('stroke', 'none');
+    t.textContent = text;
+    inner.appendChild(t);
   }
 
   /** A scrolling note: linear translateX from the right edge to the clef. */
@@ -309,6 +354,7 @@ export class KsScore extends HTMLElement {
   /** Success (green pop) or miss (red shake) animation, then the note leaves the staff. */
   private feedback(e: Entry, kind: 'success' | 'miss'): void {
     const ok = kind === 'success';
+    if (ok && this.labels === 'none') this.drawLabel(e.inner, e.note, e.cx, this.matchLabels);
     this.tint(e.inner, ok ? GREEN : RED);
     e.inner.style.transformBox = 'fill-box';
     e.inner.style.transformOrigin = 'center';
