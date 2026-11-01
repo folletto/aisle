@@ -13,6 +13,7 @@ import { attachKeyboardInput } from '../input/keyboard-map';
 import { saveCompletedSession } from '../data/storage';
 import { settingsStore } from '../state';
 import { icon } from '../icons';
+import { hapticTick } from '../haptics';
 
 const STYLE = `
 :host { display: grid; height: 100%; grid-template-rows: 1fr 1fr; background: #1b1d23; }
@@ -65,6 +66,7 @@ export class KsPlayView extends HTMLElement {
 
     // Piano touches -> bus
     this.piano.addEventListener('ks-key-down', (e) => {
+      if (settingsStore.get().haptics) hapticTick();
       const midi = (e as CustomEvent).detail.midi as number;
       const prefer = settingsStore.get().accidentals === 'flats' ? 'b' : '#';
       this.bus.emit({ note: noteFromMidi(midi, prefer), midi, source: 'touch', timestamp: performance.now() });

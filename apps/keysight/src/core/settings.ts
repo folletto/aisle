@@ -15,6 +15,8 @@ export interface Settings {
   scaleStart: boolean;
   /** Show key names on the piano keys, formatted like the Labels setting. */
   pianoLabels: boolean;
+  /** Haptic tick when a piano key is pressed (where supported). */
+  haptics: boolean;
 }
 
 export const DEFAULT_SETTINGS: Settings = {
@@ -27,6 +29,7 @@ export const DEFAULT_SETTINGS: Settings = {
   lengthMin: 2,
   scaleStart: true,
   pianoLabels: false,
+  haptics: true,
 };
 
 export function rangeIsValid(clef: Clef, low: string, high: string): boolean {
@@ -44,6 +47,7 @@ export function normaliseSettings(input: Partial<Settings> | undefined): Setting
   s.lengthMin = Math.min(10, Math.max(1, Math.round(Number.isFinite(Number(s.lengthMin)) ? Number(s.lengthMin) : DEFAULT_SETTINGS.lengthMin)));
   s.scaleStart = Boolean(s.scaleStart);
   s.pianoLabels = Boolean(s.pianoLabels);
+  s.haptics = typeof s.haptics === 'boolean' ? s.haptics : DEFAULT_SETTINGS.haptics;
   if (!rangeIsValid(s.clef, s.rangeLow, s.rangeHigh)) {
     s.rangeLow = CLEFS[s.clef].defaultLow;
     s.rangeHigh = CLEFS[s.clef].defaultHigh;

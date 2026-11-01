@@ -24,6 +24,7 @@ Vite + TypeScript, native Web Components (Custom Elements + Shadow DOM, no UI fr
 
 * Scoring: a target is correct only if answered with no wrong press before it. Wrong presses are logged, not subtracted. A timed note reaching the clef counts as failed.
 * Scale start is on by default; its notes count towards the score.
+* Haptics (`src/haptics.ts`): on-screen key press gives a 10 ms vibration (Android) or a best-effort iOS switch tick; toggle in Settings, on by default.
 * Stop, leaving the Play tab, or backgrounding the page aborts the session and saves nothing.
 * Stats tab (`core/stats.ts`, `ks-stats-view`): last 7 and 30 day averages and the 5 latest scores. Windows are calendar days anchored on the day of the most recent session, not today. The average is pooled (all notes hit / all notes asked), not a mean of session percentages.
 
