@@ -23,7 +23,7 @@ const STYLE = `
 .pan::after { content: ''; position: absolute; left: 50%; top: 8px; width: 44px; height: 4px; margin-left: -22px;
   border-radius: 2px; background: #5b6070; }
 :host([locked]) .pan { opacity: 0; pointer-events: none; }
-.keys { position: absolute; left: 0; right: 0; top: 20px; bottom: 0; touch-action: none; }
+.keys { position: absolute; left: 0; right: 0; top: 20px; bottom: 0; touch-action: none; border-top: 1px solid #b8bcc8; }
 .key { position: absolute; box-sizing: border-box; touch-action: none; }
 .white { top: 0; bottom: 0; background: #fff; border: 1px solid #b8bcc8; border-top: 0; border-radius: 0 0 6px 6px; }
 .white.dim { background: #eceef3; }
