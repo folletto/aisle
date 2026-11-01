@@ -7,6 +7,7 @@ import type { KsScore } from './ks-score/ks-score';
 import type { KsPiano } from './ks-piano/ks-piano';
 import type { KsResults } from './ks-results';
 import { SessionEngine } from '../core/session';
+import { labelOnMatch, labelsUnderNote } from '../core/settings';
 import { noteFromMidi, parseNote } from '../core/notes';
 import { InputBus } from '../input/bus';
 import { attachKeyboardInput } from '../input/keyboard-map';
@@ -119,7 +120,8 @@ export class KsPlayView extends HTMLElement {
   private applySettings(): void {
     const s = settingsStore.get();
     this.score.setAttribute('clef', s.clef);
-    this.score.setAttribute('labels', s.showLabels === 'note' || s.showLabels === 'both' ? s.labels : 'none');
+    this.score.setAttribute('labels', labelsUnderNote(s) ? s.labels : 'none');
+    this.score.setAttribute('match-labels', labelOnMatch(s) ? s.labels : 'none');
     this.score.setAttribute('locale', s.language);
     this.piano.setAttribute('locale', s.language);
     this.score.setAttribute('range-low', s.rangeLow);

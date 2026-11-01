@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { diatonicIndex, formatKeyLabel, formatLabel, midiOf, noteFromMidi, noteName, parseNote } from '../../src/core/notes';
 import { buildPool, createRng, pickNote, rangeOptions, whiteNotesBetween } from '../../src/core/pool';
-import { DEFAULT_SETTINGS, normaliseSettings, updateSettings } from '../../src/core/settings';
+import { DEFAULT_SETTINGS, labelOnMatch, normaliseSettings, updateSettings } from '../../src/core/settings';
 import { centredStart, clampVisible, fitAllVisible, defaultVisible, hiddenCounts, pinchVisible } from '../../src/core/keyboard';
 import { computeLayout, noteOffsetY } from '../../src/components/ks-score/layout';
 import { KEY_OFFSETS, midiForKey } from '../../src/input/keyboard-map';
@@ -127,6 +127,13 @@ describe('settings', () => {
     expect(normaliseSettings({ showLabels: 'key' }).showLabels).toBe('key');
     expect(normaliseSettings({ showLabels: 'x' as never }).showLabels).toBe('note');
     expect(normaliseSettings({ showLabels: 'none', labels: 'none' }).labels).toBe('letters');
+  });
+  it('shows the label on a match always under note / both, otherwise per toggle', () => {
+    const f = (showLabels: never, matchLabel: boolean) => labelOnMatch(normaliseSettings({ showLabels, matchLabel }));
+    expect(f('note' as never, false)).toBe(true);
+    expect(f('both' as never, false)).toBe(true);
+    expect(f('none' as never, false)).toBe(false);
+    expect(f('key' as never, true)).toBe(true);
   });
   it('migrates the old labels / pianoLabels settings', () => {
     const old = (o: object) => normaliseSettings(o as never);

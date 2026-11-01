@@ -13,6 +13,8 @@ export interface Settings {
   showLabels: ShowLabels;
   /** Label format (solfege, letters or both), used wherever labels are shown. */
   labels: LabelMode;
+  /** Show the label under a correctly matched note. Always on when labels show under the note. */
+  matchLabel: boolean;
   rangeLow: string;
   rangeHigh: string;
   accidentals: Accidentals;
@@ -30,6 +32,7 @@ export const DEFAULT_SETTINGS: Settings = {
   clef: 'treble',
   showLabels: 'note',
   labels: 'letters',
+  matchLabel: false,
   rangeLow: 'C4',
   rangeHigh: 'B4',
   accidentals: 'none',
@@ -64,6 +67,7 @@ export function normaliseSettings(input: Partial<Settings> | undefined): Setting
   if (![ 'static', 20, 40, 80].includes(s.speed)) s.speed = 'static';
   s.lengthMin = Math.min(10, Math.max(1, Math.round(Number.isFinite(Number(s.lengthMin)) ? Number(s.lengthMin) : DEFAULT_SETTINGS.lengthMin)));
   s.scaleStart = Boolean(s.scaleStart);
+  s.matchLabel = Boolean(s.matchLabel);
   if (!isLang(s.language)) s.language = DEFAULT_SETTINGS.language;
   s.haptics = typeof s.haptics === 'boolean' ? s.haptics : DEFAULT_SETTINGS.haptics;
   s.sound = typeof s.sound === 'boolean' ? s.sound : DEFAULT_SETTINGS.sound;
@@ -82,4 +86,12 @@ export function updateSettings(current: Settings, change: Partial<Settings>): Se
     next.rangeHigh = CLEFS[next.clef].defaultHigh;
   }
   return normaliseSettings(next);
+}
+
+/** Labels under the target note: always when shown under the note, else only on a match if enabled. */
+export function labelsUnderNote(s: Settings): boolean {
+  return s.showLabels === 'note' || s.showLabels === 'both';
+}
+export function labelOnMatch(s: Settings): boolean {
+  return labelsUnderNote(s) || s.matchLabel;
 }

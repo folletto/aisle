@@ -1,7 +1,7 @@
 // Settings view: every change is saved immediately through the settings store.
 import { LabelMode, midiOf, parseNote } from '../core/notes';
 import { Accidentals, Clef, rangeOptions } from '../core/pool';
-import { Settings, ShowLabels, Speed } from '../core/settings';
+import { Settings, ShowLabels, Speed, labelsUnderNote } from '../core/settings';
 import { LANGS, Lang, getLanguage, t } from '../i18n';
 import { settingsStore } from '../state';
 
@@ -72,6 +72,7 @@ export class KsSettingsView extends HTMLElement {
       <fieldset><legend>${t('clef')}</legend>${seg('clef', [['treble', t('treble')], ['bass', t('bass')]])}</fieldset>
       <fieldset><legend>${t('showLabels')}</legend><div class="pair"><select name="showLabels" aria-label="${t('showLabels')}">${([['none', t('none')], ['note', t('underNote')], ['key', t('onKey')], ['both', t('both')]] as const).map(([v, l]) => `<option value="${v}">${l}</option>`).join('')}</select></div></fieldset>
       <fieldset class="labels-format"><legend>${t('labels')}</legend>${seg('labels', [['solfege', t('solfege')], ['letters', t('letters')], ['both', t('both')]])}</fieldset>
+      ${toggle('matchLabel', t('matchLabel'))}
       <fieldset><legend>${t('range')}</legend><div class="pair"><select name="rangeLow" aria-label="${t('lowestNote')}"></select><span>${t('to')}</span><select name="rangeHigh" aria-label="${t('highestNote')}"></select></div></fieldset>
       <fieldset><legend>${t('accidentals')}</legend>${seg('accidentals', [['none', t('none')], ['sharps', t('sharps')], ['flats', t('flats')], ['both', t('both')]])}</fieldset>
       <fieldset><legend>${t('speed')}</legend>${seg('speed', [['static', t('static')], ['20', t('bpm', { n: 20 })], ['40', t('bpm', { n: 40 })], ['80', t('bpm', { n: 80 })]])}</fieldset>
@@ -101,6 +102,7 @@ export class KsSettingsView extends HTMLElement {
       case 'rangeLow': return settingsStore.set({ rangeLow: el.value });
       case 'rangeHigh': return settingsStore.set({ rangeHigh: el.value });
       case 'lengthMin': return settingsStore.set({ lengthMin: Number(el.value) });
+      case 'matchLabel': return settingsStore.set({ matchLabel: el.checked });
       case 'scaleStart': return settingsStore.set({ scaleStart: el.checked });
       case 'haptics': return settingsStore.set({ haptics: el.checked });
       case 'sound': return settingsStore.set({ sound: el.checked });
@@ -131,6 +133,9 @@ export class KsSettingsView extends HTMLElement {
     const slider = root.querySelector<HTMLInputElement>('input[name="lengthMin"]')!;
     slider.value = String(s.lengthMin);
     root.querySelector('.len output')!.textContent = t('minShort', { n: s.lengthMin });
+    const match = root.querySelector<HTMLInputElement>('#matchLabel')!;
+    match.disabled = labelsUnderNote(s);
+    match.checked = labelsUnderNote(s) || s.matchLabel;
     for (const id of ['scaleStart', 'haptics', 'sound'] as const) root.querySelector<HTMLInputElement>(`#${id}`)!.checked = s[id];
     root.querySelector<HTMLSelectElement>('select[name="language"]')!.value = s.language;
   }

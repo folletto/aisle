@@ -36,7 +36,7 @@ svg { width: 100%; height: 100%; display: block; }
 `;
 
 export class KsScore extends HTMLElement {
-  static observedAttributes = ['clef', 'labels', 'locale', 'range-low', 'range-high'];
+  static observedAttributes = ['clef', 'labels', 'match-labels', 'locale', 'range-low', 'range-high'];
 
   /** Resolves once the music font is ready and the staff is drawn. */
   ready: Promise<void>;
@@ -69,6 +69,11 @@ export class KsScore extends HTMLElement {
   get labels(): LabelMode {
     const v = this.getAttribute('labels');
     return v === 'none' || v === 'solfege' || v === 'both' ? v : 'letters';
+  }
+  /** Label format shown only on a matched note (while `labels` is none). */
+  get matchLabels(): LabelMode {
+    const v = this.getAttribute('match-labels');
+    return v === 'solfege' || v === 'letters' || v === 'both' ? v : 'none';
   }
   get locale(): Locale {
     const v = this.getAttribute('locale');
@@ -242,24 +247,27 @@ export class KsScore extends HTMLElement {
     outer.appendChild(inner);
 
     const cx = (sn.getNoteHeadBeginX() + sn.getNoteHeadEndX()) / 2;
-    const withLabel = opts.label ?? true;
-    const text = withLabel ? formatLabel(note, this.labels, this.locale) : '';
-    if (text) {
-      const noteY = this.layout!.topLineY + noteOffsetY(note, this.clef);
-      const labelY = Math.max(noteY + 34, this.layout!.topLineY + 4 * LINE_GAP + 26);
-      const t = document.createElementNS(SVG_NS, 'text');
-      t.setAttribute('x', String(cx));
-      t.setAttribute('y', String(labelY));
-      t.setAttribute('text-anchor', 'middle');
-      t.setAttribute('font-size', '14');
-      t.setAttribute('font-family', 'system-ui, sans-serif');
-      t.setAttribute('font-weight', '600');
-      t.setAttribute('fill', opts.color ?? '#333');
-      t.setAttribute('stroke', 'none');
-      t.textContent = text;
-      inner.appendChild(t);
-    }
+    if (opts.label ?? true) this.drawLabel(inner, note, cx, this.labels, opts.color);
     return { note, outer, inner, cx, startX: 0, endX: 0, durationMs: 0 };
+  }
+
+  /** Note name under the notehead, formatted with `mode` (nothing when the mode is none). */
+  private drawLabel(inner: SVGGElement, note: Note, cx: number, mode: LabelMode, color?: string): void {
+    const text = formatLabel(note, mode, this.locale);
+    if (!text) return;
+    const noteY = this.layout!.topLineY + noteOffsetY(note, this.clef);
+    const labelY = Math.max(noteY + 34, this.layout!.topLineY + 4 * LINE_GAP + 26);
+    const t = document.createElementNS(SVG_NS, 'text');
+    t.setAttribute('x', String(cx));
+    t.setAttribute('y', String(labelY));
+    t.setAttribute('text-anchor', 'middle');
+    t.setAttribute('font-size', '14');
+    t.setAttribute('font-family', 'system-ui, sans-serif');
+    t.setAttribute('font-weight', '600');
+    t.setAttribute('fill', color ?? '#333');
+    t.setAttribute('stroke', 'none');
+    t.textContent = text;
+    inner.appendChild(t);
   }
 
   /** A scrolling note: linear translateX from the right edge to the clef. */
@@ -309,6 +317,7 @@ export class KsScore extends HTMLElement {
   /** Success (green pop) or miss (red shake) animation, then the note leaves the staff. */
   private feedback(e: Entry, kind: 'success' | 'miss'): void {
     const ok = kind === 'success';
+    if (ok && this.labels === 'none') this.drawLabel(e.inner, e.note, e.cx, this.matchLabels);
     this.tint(e.inner, ok ? GREEN : RED);
     e.inner.style.transformBox = 'fill-box';
     e.inner.style.transformOrigin = 'center';
