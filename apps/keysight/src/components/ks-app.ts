@@ -17,7 +17,7 @@ main { position: absolute; inset: 0; }
 main > * { height: 100%; }
 @media (orientation: landscape) {
   ks-tabbar { top: 50%; left: calc(8px + env(safe-area-inset-left)); transform: translateY(-50%); }
-  main { left: calc(72px + env(safe-area-inset-left)); }
+  main { left: calc(86px + env(safe-area-inset-left)); }
 }
 `;
 
