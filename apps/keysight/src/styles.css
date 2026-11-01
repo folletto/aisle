@@ -1,0 +1,2 @@
+html, body { margin: 0; height: 100%; background: #fff; overscroll-behavior: none; -webkit-text-size-adjust: 100%; }
+body { font-family: system-ui, -apple-system, sans-serif; touch-action: manipulation; -webkit-touch-callout: none; user-select: none; -webkit-user-select: none; }

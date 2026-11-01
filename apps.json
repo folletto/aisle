@@ -105,6 +105,25 @@
           "#0F9D58"
         ]
       }
+    },
+    {
+      "name": "KeySight",
+      "description": "Piano sight-reading trainer: read the note, press the key",
+      "folder": "keysight",
+      "url": "",
+      "siteId": "",
+      "tags": [
+        "music",
+        "piano",
+        "learning"
+      ],
+      "launcher": {
+        "icon": "KeyboardMusic",
+        "colors": [
+          "#1d4ed8",
+          "#60a5fa"
+        ]
+      }
     }
   ]
 }
