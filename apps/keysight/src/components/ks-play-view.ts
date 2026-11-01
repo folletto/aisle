@@ -25,9 +25,10 @@ ks-score { position: absolute; inset: 0; top: calc(56px + env(safe-area-inset-to
 ks-results { position: absolute; inset: 0; z-index: 3; }
 .count { position: absolute; top: calc(14px + env(safe-area-inset-top)); right: calc(16px + env(safe-area-inset-right));
   font: 600 15px system-ui, sans-serif; font-variant-numeric: tabular-nums; color: #4a5060; }
-.badge { position: absolute; bottom: 6px; z-index: 4; display: none; align-items: center; gap: 4px; padding: 3px 9px 3px 7px;
+.badge { font: inherit; cursor: pointer; -webkit-tap-highlight-color: transparent; position: absolute; bottom: 6px; z-index: 4; display: none; align-items: center; gap: 4px; padding: 3px 9px 3px 7px;
   border-radius: 999px; background: #fff3cd; color: #8a5a00; border: 1px solid #f0c36d; font: 700 13px system-ui, sans-serif; }
 .badge.on { display: inline-flex; }
+.badge:focus-visible { outline: 2px solid #1d4ed8; outline-offset: 2px; }
 .badge.left { left: calc(8px + env(safe-area-inset-left)); }
 .badge.right { right: calc(8px + env(safe-area-inset-right)); }
 ks-piano { min-height: 0; padding-bottom: env(safe-area-inset-bottom); background: #1b1d23; }
@@ -50,8 +51,8 @@ export class KsPlayView extends HTMLElement {
       <section class="score-area">
         <ks-score></ks-score>
         <span class="count" hidden></span>
-        <span class="badge left">${icon('warning', 14)}<b></b></span>
-        <span class="badge right">${icon('warning', 14)}<b></b></span>
+        <button type="button" class="badge left">${icon('warning', 14)}<b></b></button>
+        <button type="button" class="badge right">${icon('warning', 14)}<b></b></button>
         <ks-results></ks-results>
       </section>
       <ks-piano></ks-piano>`;
@@ -89,9 +90,12 @@ export class KsPlayView extends HTMLElement {
       for (const [el, n] of [[badgeL, left], [badgeR, right]] as const) {
         el.classList.toggle('on', n > 0);
         el.querySelector('b')!.textContent = String(n);
-        el.setAttribute('aria-label', t('hiddenNotes', { n }));
+        el.setAttribute('aria-label', `${t('hiddenNotes', { n })}. ${t('fitKeys')}`);
+        el.title = t('fitKeys');
       }
     });
+    // Tap a warning badge: reset the keyboard view to fit the whole range.
+    for (const b of [badgeL, badgeR]) b.addEventListener('click', () => this.piano.fitAll());
     // Leaving the page mid-session counts as Stop.
     const onHide = () => document.hidden && this.stopSession();
     document.addEventListener('visibilitychange', onHide);

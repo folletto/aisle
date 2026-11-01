@@ -9,6 +9,7 @@ import {
   centredStart,
   clampStart,
   defaultVisible,
+  fitAllVisible,
   hiddenCounts,
   pinchVisible,
 } from '../../core/keyboard';
@@ -111,6 +112,16 @@ export class KsPiano extends HTMLElement {
     const count = whiteNotesBetween(parseNote(this.rangeLow), parseNote(this.rangeHigh)).length;
     this.visible = defaultVisible(count, this.width);
     this.start = centredStart(parseNote(this.rangeLow), parseNote(this.rangeHigh), this.visible);
+    this.render();
+  }
+
+  /** Zoom and pan so every key of the selected range is on screen (used by the warning badge). */
+  fitAll(): void {
+    if (!this.width) return;
+    const low = parseNote(this.rangeLow);
+    const high = parseNote(this.rangeHigh);
+    this.visible = fitAllVisible(whiteNotesBetween(low, high).length, this.width);
+    this.start = centredStart(low, high, this.visible);
     this.render();
   }
 

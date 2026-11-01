@@ -17,7 +17,7 @@ Vite + TypeScript, native Web Components (Custom Elements + Shadow DOM, no UI fr
 * `src/input`: `KeyPress` event bus plus the computer keyboard map (Z X C V B N M = C..B, S D / G H J = black keys, `,` `.` or arrows shift octave).
 * `src/data`: Dexie db + `storage.ts`, the only module that touches IndexedDB. Sessions and key events are written in one transaction only when a session completes.
 * `src/components/ks-score`: standalone score (VexFlow). Imports nothing from the rest of the app except pure note helpers. API: `clear`, `showNote`, `enqueue`, `judge`, `start`, `stop`; events `ks-note-missed`, `ks-note-cleared`.
-* `src/components/ks-piano`: on-screen keyboard (integer white-key window, pinch to resize, pan strip on top, hidden-key counts for the warning badge).
+* `src/components/ks-piano`: on-screen keyboard (integer white-key window, pinch to resize, pan strip on top, hidden-key counts for the warning badge; tapping a badge calls `fitAll()` to fit the whole range on screen).
 * `src/components/ks-*-view`, `ks-app`, `ks-tabbar`, `ks-results`: shell and views. `src/router`: History API router (`/play`, `/settings`, `/stats`).
 
 ## Behaviour decisions (spec assumptions)

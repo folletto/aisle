@@ -50,6 +50,11 @@ export function pinchVisible(startVisible: number, ratio: number, widthPx: numbe
   return clampVisible(startVisible / ratio, widthPx);
 }
 
+/** Number of keys to show so the whole range fits (as far as the minimum key width allows). */
+export function fitAllVisible(rangeWhiteCount: number, widthPx: number): number {
+  return clampVisible(rangeWhiteCount, widthPx);
+}
+
 /** Range white keys that are scrolled off screen on each side. */
 export function hiddenCounts(low: Note, high: Note, start: number, visible: number): { left: number; right: number } {
   const lo = whiteIndex(snapWhite(midiOf(low)));

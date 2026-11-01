@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { diatonicIndex, formatKeyLabel, formatLabel, midiOf, noteFromMidi, noteName, parseNote } from '../../src/core/notes';
 import { buildPool, createRng, pickNote, rangeOptions, whiteNotesBetween } from '../../src/core/pool';
 import { DEFAULT_SETTINGS, normaliseSettings, updateSettings } from '../../src/core/settings';
-import { centredStart, clampVisible, defaultVisible, hiddenCounts, pinchVisible } from '../../src/core/keyboard';
+import { centredStart, clampVisible, fitAllVisible, defaultVisible, hiddenCounts, pinchVisible } from '../../src/core/keyboard';
 import { computeLayout, noteOffsetY } from '../../src/components/ks-score/layout';
 import { KEY_OFFSETS, midiForKey } from '../../src/input/keyboard-map';
 
@@ -134,6 +134,11 @@ describe('keyboard fit and pinch', () => {
     expect(pinchVisible(10, 10, 390)).toBe(5);
     expect(pinchVisible(10, 0.1, 390)).toBe(21);
     expect(clampVisible(1000, 390)).toBe(21);
+  });
+  it('fit-all shows the whole range, within the minimum key width', () => {
+    expect(fitAllVisible(15, 390)).toBe(15);
+    expect(fitAllVisible(15, 200)).toBe(11); // 200 / 18
+    expect(fitAllVisible(3, 390)).toBe(5);
   });
   it('centres the range', () => {
     const start = centredStart(n('C4'), n('B4'), 7);

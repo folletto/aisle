@@ -54,6 +54,7 @@ const en = {
   statsError: 'Could not load your sessions.',
   correct: 'Correct',
   hiddenNotes: '{n} notes of the range are off screen',
+  fitKeys: 'Tap to fit all keys on screen',
 };
 type Dict = Record<keyof typeof en, string>;
 
@@ -103,6 +104,7 @@ const fr: Dict = {
   statsError: 'Impossible de charger vos séances.',
   correct: 'Justes',
   hiddenNotes: "{n} notes de l'étendue hors de l'écran",
+  fitKeys: "Touchez pour afficher toutes les touches",
 };
 
 const it: Dict = {
@@ -151,6 +153,7 @@ const it: Dict = {
   statsError: 'Impossibile caricare le sessioni.',
   correct: 'Giuste',
   hiddenNotes: "{n} note dell'estensione fuori schermo",
+  fitKeys: 'Tocca per mostrare tutti i tasti',
 };
 
 const DICTS: Record<Lang, Dict> = { en, fr, it };
