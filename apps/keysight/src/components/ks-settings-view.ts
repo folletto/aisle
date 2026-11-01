@@ -19,7 +19,10 @@ legend, .row > label:first-child { font-size: 12px; font-weight: 700; letter-spa
 .seg input:checked + span { background: #1d4ed8; color: #fff; }
 .seg input:focus-visible + span { outline: 2px solid #1d4ed8; outline-offset: 2px; }
 .pair { display: flex; gap: 10px; align-items: center; margin-top: 6px; }
-select { flex: 1; font-size: 16px; padding: 9px 10px; border-radius: 10px; border: 1px solid #cfd3de; background: #fff; }
+select { flex: 1; min-width: 0; font: inherit; font-size: 16px; color: #1b1d23; padding: 9px 36px 9px 12px; border-radius: 10px; border: 1px solid #cfd3de;
+  -webkit-appearance: none; appearance: none; cursor: pointer;
+  background: #fff url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%236b7080' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E") no-repeat right 12px center; }
+select:focus-visible { outline: 2px solid #1d4ed8; outline-offset: 2px; }
 input[type=range] { width: 100%; margin-top: 8px; }
 .len { display: flex; justify-content: space-between; align-items: baseline; }
 .len output { font-weight: 700; font-size: 15px; }
