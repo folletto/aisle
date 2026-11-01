@@ -14,7 +14,7 @@ import { attachKeyboardInput } from '../input/keyboard-map';
 import { saveCompletedSession } from '../data/storage';
 import { settingsStore } from '../state';
 import { icon } from '../icons';
-import { hapticPress, hapticRelease } from '../haptics';
+import { attachIosHaptic, canVibrate, hapticPress } from '../haptics';
 import { playNote, primeAudio } from '../sound';
 import { t } from '../i18n';
 
@@ -33,7 +33,9 @@ ks-results { position: absolute; inset: 0; z-index: 3; }
 .badge:focus-visible { outline: 2px solid #1d4ed8; outline-offset: 2px; }
 .badge.left { left: calc(8px + env(safe-area-inset-left)); }
 .badge.right { right: calc(8px + env(safe-area-inset-right)); }
-ks-piano { min-height: 0; padding-bottom: env(safe-area-inset-bottom); background: #f6f7fb; }
+label.haptic { display: flex; flex-direction: column; position: relative; min-height: 0; -webkit-tap-highlight-color: transparent; }
+label.haptic input { position: absolute; width: 1px; height: 1px; margin: 0; visibility: hidden; }
+ks-piano { flex: 1; min-height: 0; padding-bottom: env(safe-area-inset-bottom); background: #f6f7fb; }
 `;
 
 export class KsPlayView extends HTMLElement {
@@ -57,7 +59,7 @@ export class KsPlayView extends HTMLElement {
         <button type="button" class="badge right">${icon('warning', 14)}<b></b></button>
         <ks-results></ks-results>
       </section>
-      <ks-piano></ks-piano>`;
+      <label class="haptic"><input type="checkbox" switch tabindex="-1" aria-hidden="true"><ks-piano></ks-piano></label>`;
     this.score = root.querySelector('ks-score') as KsScore;
     this.piano = root.querySelector('ks-piano') as KsPiano;
     this.results = root.querySelector('ks-results') as KsResults;
@@ -71,18 +73,16 @@ export class KsPlayView extends HTMLElement {
     // Key sound for both touch and computer keyboard presses
     this.cleanups.push(this.bus.onPress((kp) => settingsStore.get().sound && playNote(kp.midi)));
 
-    // iOS only ticks inside a user-activation event, and touch pointerdown is not one: tick on release.
-    let pendingRelease = 0;
-    this.piano.addEventListener('pointerup', () => {
-      if (pendingRelease > 0 && settingsStore.get().haptics) hapticRelease();
-      pendingRelease = 0;
-    });
+    // iOS: the tap on a key bubbles to the label around the piano, which toggles its hidden switch (haptic tick).
+    // Not needed when the Vibration API already buzzed on press, or for taps outside a key (pan strip).
+    this.cleanups.push(
+      attachIosHaptic(root.querySelector('label.haptic') as HTMLLabelElement, (e) =>
+        settingsStore.get().haptics && !canVibrate() && e.composedPath().some((n) => n instanceof Element && n.classList.contains('key')),
+      ),
+    );
     // Piano touches -> bus
     this.piano.addEventListener('ks-key-down', (e) => {
-      if (settingsStore.get().haptics) {
-        hapticPress();
-        pendingRelease++;
-      }
+      if (settingsStore.get().haptics) hapticPress();
       const midi = (e as CustomEvent).detail.midi as number;
       const prefer = settingsStore.get().accidentals === 'flats' ? 'b' : '#';
       this.bus.emit({ note: noteFromMidi(midi, prefer), midi, source: 'touch', timestamp: performance.now() });
