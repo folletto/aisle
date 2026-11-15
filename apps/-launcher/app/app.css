@@ -1,6 +1,6 @@
 /* COLOR TOKENS */
 :root {
-  --color-bg: #70b4bf;
+  --color-bg: #7cadc3;
   --color-blue-deep: #003b4d;
   --color-blue-mid: #7cadc3;
   --color-blue-link: #137ba8;
@@ -52,7 +52,7 @@ button {
   /* Flat face: soft glow top-right over a gentle warm gradient */
   background:
     radial-gradient(circle at 80% 6%, rgba(255, 255, 255, 0.7), transparent 50%),
-    linear-gradient(200deg, #fbf3e7 0%, #efe6da 50%, #e4dbce 100%);
+    linear-gradient(200deg, #e7f8fb, #daefef, #cee0e4);
 
   box-shadow:
     /* bright rim on the lit (top/right) edges */

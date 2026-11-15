@@ -6,7 +6,7 @@
   font-size: 0.78rem;
   color: var(--color-text-muted);
   /* Subtle backdrop so the text stays readable when overlapping content */
-  background: rgba(112, 180, 191, 0.85);
+  background: color-mix(in srgb, var(--color-bg) 85%, transparent);
   backdrop-filter: blur(6px);
   -webkit-backdrop-filter: blur(6px);
 }
