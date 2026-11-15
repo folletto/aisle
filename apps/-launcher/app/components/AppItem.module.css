@@ -26,6 +26,7 @@
 .iconWrap {
   width: 72px;
   height: 72px;
+  color: var(--color-text); /* same as the label */
   display: flex;
   align-items: center;
   justify-content: center;

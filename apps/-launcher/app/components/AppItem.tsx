@@ -18,13 +18,13 @@ interface AppItemProps {
 }
 
 export default function AppItem({ app }: AppItemProps) {
-  const { Icon, iconColor } = getAppIcon(app);
+  const { Icon } = getAppIcon(app);
   const hasUrl = Boolean(app.url);
 
   const content = (
     <>
       <div className={`pastel-button ${styles.iconWrap}`}>
-        <Icon size={28} color={iconColor} strokeWidth={1.75} />
+        <Icon size={28} color="currentColor" strokeWidth={1.75} />
       </div>
       <span className={styles.name}>{app.name}</span>
     </>
