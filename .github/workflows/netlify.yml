@@ -371,23 +371,19 @@ jobs:
             DEPLOY_FLAGS="--dir=$DEPLOY_DIR --site=$SITE_ID --message=$DEPLOY_MSG --json"
             [ "$IS_PROD" = "true" ] && DEPLOY_FLAGS="$DEPLOY_FLAGS --prod"
 
-            ALIAS_URL=""
             if [ "$IS_PROD" != "true" ] && [ -n "${PR_NUMBER:-}" ] && [ "$PR_NUMBER" != "manual" ]; then
               DEPLOY_FLAGS="$DEPLOY_FLAGS --alias=pr-${PR_NUMBER}"
-              # Derive the Netlify site name from the app's url in apps.json
-              # (e.g. https://the-aisle.netlify.app → the-aisle), since site
-              # names don't always follow the aisle-<folder> pattern.
-              APP_URL=$(jq -r --arg f "$FOLDER" \
-                '.apps[] | select(.folder == $f) | .url // empty' apps.json)
-              SITE_NAME=$(echo "$APP_URL" | sed -nE 's#^https?://([^./]+)\.netlify\.app/?$#\1#p')
-              [ -z "$SITE_NAME" ] && SITE_NAME="aisle-${FOLDER}"
-              ALIAS_URL="https://pr-${PR_NUMBER}--${SITE_NAME}.netlify.app"
             fi
 
+            # Capture stdout (JSON) separately from stderr (logs/warnings) so
+            # the JSON stays parseable
+            DEPLOY_ERR=$(mktemp)
             echo "  Deploying (prod=$IS_PROD)..."
-            if ! DEPLOY_OUT=$(netlify deploy $DEPLOY_FLAGS 2>&1); then
+            if ! DEPLOY_OUT=$(netlify deploy $DEPLOY_FLAGS 2>"$DEPLOY_ERR"); then
               echo "  ✗ Deploy failed for $FOLDER:"
               echo "$DEPLOY_OUT"
+              cat "$DEPLOY_ERR"
+              rm -f "$DEPLOY_ERR"
               DEPLOY_ROWS="${DEPLOY_ROWS}\n| \`$FOLDER\` | ❌ Deploy failed |"
               DEPLOY_FAILED=true
               DEPLOY_RESULTS=$(echo "$DEPLOY_RESULTS" | jq \
@@ -396,15 +392,19 @@ jobs:
               continue
             fi
 
-            # Extract the deployed URL
+            # Extract the deployed URL as returned by Netlify:
+            # - production → .url (the site's live URL)
+            # - preview    → .deploy_url (the pr-<N>--<site> alias URL, or a
+            #                unique draft URL for manual runs without a PR)
             if [ "$IS_PROD" = "true" ]; then
-              DEPLOY_URL=$(echo "$DEPLOY_OUT" | jq -r '.url // .ssl_url // empty' 2>/dev/null || true)
-            elif [ -n "$ALIAS_URL" ]; then
-              DEPLOY_URL="$ALIAS_URL"
+              DEPLOY_URL=$(echo "$DEPLOY_OUT" | jq -r '.url // .deploy_url // empty' 2>/dev/null || true)
             else
-              # Fallback: manual dispatch with no PR number
               DEPLOY_URL=$(echo "$DEPLOY_OUT" | jq -r '.deploy_url // empty' 2>/dev/null || true)
             fi
+            if [ -z "$DEPLOY_URL" ]; then
+              cat "$DEPLOY_ERR"
+            fi
+            rm -f "$DEPLOY_ERR"
 
             if [ -n "$DEPLOY_URL" ]; then
               echo "  ✓ $DEPLOY_URL"
