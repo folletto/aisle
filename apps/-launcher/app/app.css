@@ -56,16 +56,17 @@ button {
 
   box-shadow:
     /* bright rim on the lit (top/right) edges */
-    inset -1.5px 1.5px 0 rgba(255, 255, 255, 0.95),
-    inset -3px 3px 5px rgba(255, 255, 255, 0.45),
+    inset -1.5px 1.5px #fffffff2,
+    inset -3px 3px 5px #ffffff73,
     /* narrow rounded edge: the face curves away over the last few px */
-    inset 0 0 3px 1px rgba(150, 130, 105, 0.12),
-    inset 3px -3px 5px -1px rgba(130, 110, 85, 0.22),
+    inset 0px 0px 2px 1px #ffffffaa,
+    inset 0 0 3px 1px #d2e5e8,
+    inset 3px -3px 5px -1px #ffffff,
     /* outer glow spilling onto the background, top-right */
-    2px -3px 7px rgba(255, 255, 255, 0.45),
-    8px -8px 22px rgba(255, 255, 255, 0.18),
+    2px -3px 7px #ffffff73,
+    8px -8px 22px #ffffff2e,
     /* shadow cast down-left: dark at the contact, fading out */
-    -3px 5px 5px rgba(25, 45, 45, 0.45),
-    -10px 14px 18px rgba(30, 55, 55, 0.40),
-    -18px 26px 38px rgba(30, 60, 60, 0.28);
+    -3px 5px 5px #192d2d73,
+    -10px 14px 18px #1e373766,
+    -18px 26px 38px #1e3c3c47;
 }
