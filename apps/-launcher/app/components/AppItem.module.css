@@ -26,28 +26,21 @@
 .iconWrap {
   width: 72px;
   height: 72px;
-  border-radius: 18px;
   display: flex;
   align-items: center;
   justify-content: center;
   flex-shrink: 0;
-  /* Base shadow — icon resting on the surface */
-  box-shadow:
-    inset 0 1px 0 rgba(255, 255, 255, 0.25),
-    0 2px 6px rgba(0, 0, 0, 0.14);
   transform: translateY(0);
-  /* Animate both shadow and position together */
-  transition:
-    box-shadow 0.18s ease,
-    transform 0.18s ease;
+  transition: transform 0.18s ease;
 }
 
-/* Parent hover lifts the icon: shadow grows and blurs as distance increases */
+/* Keep the pastel-button radius at ~30% of the (smaller) icon width */
+.item .iconWrap {
+  border-radius: 30%;
+}
+
+/* Parent hover lifts the icon slightly */
 .item:hover .iconWrap {
-  box-shadow:
-    inset 0 1px 0 rgba(255, 255, 255, 0.25),
-    0 10px 28px rgba(0, 0, 0, 0.2),
-    0 4px 10px rgba(0, 0, 0, 0.1);
   transform: translateY(-3px) scale(1.06);
 }
 
@@ -72,7 +65,6 @@
   .iconWrap {
     width: 80px;
     height: 80px;
-    border-radius: 20px;
   }
 
   .name {

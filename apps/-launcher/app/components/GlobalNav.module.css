@@ -24,6 +24,10 @@
   flex-shrink: 0;
 }
 
+.brandPrefix {
+  font-weight: 400;
+}
+
 .actions {
   display: flex;
   align-items: center;
