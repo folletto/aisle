@@ -14064,6 +14064,7 @@ const Qd = ["Morning", "Afternoon", "Evening"],
     const [c, s] = _.useState(yv(new Date())),
       [o, r] = _.useState({}),
       [h, g] = _.useState(!0),
+      [copied, setCopied] = _.useState(!1),
       D = new Date();
     D.setHours(0, 0, 0, 0);
     const M = D.getTime(),
@@ -14309,10 +14310,31 @@ const Qd = ["Morning", "Afternoon", "Evening"],
           className: "mt-6",
           children: [
             " ",
-            vt.jsx("label", {
-              htmlFor: "selectedSlots",
-              className: "block text-sm font-medium text-gray-700 mb-2",
-              children: "Selected time slots:",
+            vt.jsxs("div", {
+              className: "flex items-center justify-between mb-2",
+              children: [
+                vt.jsx("label", {
+                  htmlFor: "selectedSlots",
+                  className: "block text-sm font-medium text-gray-700",
+                  children: "Selected time slots:",
+                }),
+                vt.jsx("button", {
+                  type: "button",
+                  disabled: !zt,
+                  onClick: () => {
+                    navigator.clipboard
+                      .writeText(zt)
+                      .then(() => {
+                        setCopied(!0);
+                        setTimeout(() => setCopied(!1), 1500);
+                      })
+                      .catch(() => {});
+                  },
+                  className:
+                    "px-3 py-1 text-sm font-medium text-blue-600 border border-blue-600 rounded-lg hover:bg-blue-50 disabled:opacity-40 disabled:cursor-not-allowed",
+                  children: copied ? "Copied!" : "Copy",
+                }),
+              ],
             }),
             vt.jsx("textarea", {
               id: "selectedSlots",
