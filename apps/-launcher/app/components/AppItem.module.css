@@ -32,7 +32,7 @@
   justify-content: center;
   flex-shrink: 0;
   transform: translateY(0);
-  transition: transform 0.18s ease;
+  transition: transform 0.18s ease-in-out;
 }
 
 /* Keep the pastel-button radius at ~30% of the (smaller) icon width */
