@@ -44,7 +44,9 @@ export default function GlobalNav({ onSearch }: GlobalNavProps) {
   return (
     <header className={styles.header}>
       <nav className={styles.nav}>
-        <span className={styles.brand}>Aisle</span>
+        <span className={styles.brand}>
+          <span className={styles.brandPrefix}>Folletto</span> Aisle
+        </span>
 
         <div className={styles.actions}>
           {searchOpen ? (

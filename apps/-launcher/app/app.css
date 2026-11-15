@@ -1,6 +1,6 @@
 /* COLOR TOKENS */
 :root {
-  --color-bg: #ffffff;
+  --color-bg: #70b4bf;
   --color-blue-deep: #003b4d;
   --color-blue-mid: #7cadc3;
   --color-blue-link: #137ba8;
@@ -42,4 +42,30 @@ button {
   background: none;
   padding: 0;
   color: inherit;
+}
+
+/* PASTEL BUTTON */
+.pastel-button {
+  border: 0;
+  border-radius: 44px; /* ~30% of the width */
+
+  /* Flat face: soft glow top-right over a gentle warm gradient */
+  background:
+    radial-gradient(circle at 80% 6%, rgba(255, 255, 255, 0.7), transparent 50%),
+    linear-gradient(200deg, #fbf3e7 0%, #efe6da 50%, #e4dbce 100%);
+
+  box-shadow:
+    /* bright rim on the lit (top/right) edges */
+    inset -1.5px 1.5px 0 rgba(255, 255, 255, 0.95),
+    inset -3px 3px 5px rgba(255, 255, 255, 0.45),
+    /* narrow rounded edge: the face curves away over the last few px */
+    inset 0 0 3px 1px rgba(150, 130, 105, 0.12),
+    inset 3px -3px 5px -1px rgba(130, 110, 85, 0.22),
+    /* outer glow spilling onto the background, top-right */
+    2px -3px 7px rgba(255, 255, 255, 0.45),
+    8px -8px 22px rgba(255, 255, 255, 0.18),
+    /* shadow cast down-left: dark at the contact, fading out */
+    -3px 5px 5px rgba(25, 45, 45, 0.45),
+    -10px 14px 18px rgba(30, 55, 55, 0.40),
+    -18px 26px 38px rgba(30, 60, 60, 0.28);
 }
