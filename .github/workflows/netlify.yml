@@ -47,7 +47,7 @@ jobs:
       apps_json_updated: ${{ steps.provision.outputs.apps_json_updated }}
       created_apps: ${{ steps.provision.outputs.created_apps }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
         with:
           ref: ${{ github.head_ref || github.ref_name }}
           token: ${{ secrets.GITHUB_TOKEN }}
@@ -174,13 +174,13 @@ jobs:
     needs: setup
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
         with:
           # Re-checkout to pick up any commits from the setup job
           ref: ${{ github.head_ref || github.ref_name }}
           fetch-depth: 0
 
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v7
         with:
           node-version: '22'
 
@@ -374,7 +374,14 @@ jobs:
             ALIAS_URL=""
             if [ "$IS_PROD" != "true" ] && [ -n "${PR_NUMBER:-}" ] && [ "$PR_NUMBER" != "manual" ]; then
               DEPLOY_FLAGS="$DEPLOY_FLAGS --alias=pr-${PR_NUMBER}"
-              ALIAS_URL="https://pr-${PR_NUMBER}--aisle-${FOLDER}.netlify.app"
+              # Derive the Netlify site name from the app's url in apps.json
+              # (e.g. https://the-aisle.netlify.app → the-aisle), since site
+              # names don't always follow the aisle-<folder> pattern.
+              APP_URL=$(jq -r --arg f "$FOLDER" \
+                '.apps[] | select(.folder == $f) | .url // empty' apps.json)
+              SITE_NAME=$(echo "$APP_URL" | sed -nE 's#^https?://([^./]+)\.netlify\.app/?$#\1#p')
+              [ -z "$SITE_NAME" ] && SITE_NAME="aisle-${FOLDER}"
+              ALIAS_URL="https://pr-${PR_NUMBER}--${SITE_NAME}.netlify.app"
             fi
 
             echo "  Deploying (prod=$IS_PROD)..."
@@ -438,7 +445,7 @@ jobs:
       # ── GitHub Deployments API: Create deployments + post final statuses ───────
       - name: Update GitHub deployment statuses
         if: always() && steps.deploy.outputs.deploy_results != '' && steps.deploy.outputs.deploy_results != '{}'
-        uses: actions/github-script@v7
+        uses: actions/github-script@v9
         env:
           DEPLOY_RESULTS: ${{ steps.deploy.outputs.deploy_results }}
           COMMIT_SHA: ${{ github.sha }}
@@ -491,7 +498,7 @@ jobs:
       # ── Post / update a PR comment with preview URLs ────────────────────────
       - name: Post preview URLs on PR
         if: github.event_name == 'pull_request' && steps.deploy.outputs.deploy_rows != ''
-        uses: actions/github-script@v7
+        uses: actions/github-script@v9
         env:
           DEPLOY_ROWS: ${{ steps.deploy.outputs.deploy_rows }}
           COMMIT_SHA: ${{ github.sha }}
